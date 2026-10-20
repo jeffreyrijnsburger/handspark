@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2026-10-20
+
+- Give every gesture and reaction an icon in both README overviews.
+- Show two hand symbols for two thumbs, two peace signs and two metal horns.
+- Reuse the application’s effect icons and identify rain with lightning.
+
 ## 0.3.0 — 2026-10-20
 
 - Keep the virtual-camera capture stream free for meeting clients by reading
