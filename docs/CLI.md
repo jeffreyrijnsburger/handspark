@@ -43,7 +43,7 @@ Invalid syntax exits 2; general operational failures exit 1.
 An offline JSON status exits 3:
 
 ```json
-{"schema_version":1,"version":"0.4.0","ok":false,"error_code":"camera_offline"}
+{"schema_version":1,"version":"0.4.1","ok":false,"error_code":"camera_offline"}
 ```
 
 `status`, `list`, `commands`, `--version` and reading `language`, `preview` or

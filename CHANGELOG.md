@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 — 2026-10-20
+
+- Replace the app icon’s short motion lines with two rounded arcs above the
+  raised hand: a thin outer arc and a thicker inner arc.
+
 ## 0.4.0 — 2026-10-20
 
 - Give thumbs up a larger golden hand, a spring entrance, a playful nod and
