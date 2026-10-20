@@ -26,6 +26,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(data['version'], (BASE / 'VERSION').read_text().strip())
         self.assertEqual(len(data['reactions']), 8)
         self.assertIn('lasers', data['reactions'])
+        self.assertNotIn('prosper', data['reactions'])
         self.assertFalse((Path(self.folder.name) / '.config').exists())
 
     def test_offline_status_is_json_without_starting_a_camera(self):

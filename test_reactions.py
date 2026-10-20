@@ -55,6 +55,32 @@ class RainTests(unittest.TestCase):
 
 
 class ThumbVisualTests(unittest.TestCase):
+    def test_golden_thumb_keeps_its_color_and_animation_at_meeting_resolution(self):
+        renderer = Renderer('thumbs_up')
+        first = np.asarray(renderer.frame(0.35).resize((640, 360)))
+        later = np.asarray(renderer.frame(1.8).resize((640, 360)))
+        gold = (later[:, :, 0] > 220) & (later[:, :, 1] > 120) & (later[:, :, 1] < 235) & (later[:, :, 2] < 100)
+        self.assertGreater(int(gold.sum()), 1200)
+        self.assertGreater(float(np.mean(np.abs(first.astype(float) - later))), 0.8)
+        high = np.asarray(renderer.frame(0.4))[:, :, 3]
+        self.assertFalse(high[:20].any())
+        self.assertFalse(high[-20:].any())
+        for t in (0.125, 0.25, 0.5, 1, 4.7):
+            left, top, right, bottom = renderer.frame(t).getchannel('A').getbbox()
+            for x, y in ((0.24, 0.32), (0.76, 0.6)):
+                self.assertGreaterEqual(left + (x - 0.5) * 960, 0)
+                self.assertLessEqual(right + (x - 0.5) * 960, 960)
+                self.assertGreaterEqual(top + (y - 0.5) * 540, 0)
+                self.assertLessEqual(bottom + (y - 0.5) * 540, 540)
+
+    def test_orbital_animation_moves_and_fades_to_transparency(self):
+        renderer = Renderer('prosper')
+        first = np.asarray(renderer.frame(1))
+        later = np.asarray(renderer.frame(2))
+        self.assertGreater(int(np.count_nonzero(first != later)), 10000)
+        for t in (0, DURATION):
+            self.assertIsNone(renderer.frame(t).getchannel('A').getbbox())
+
     def test_thumbs_have_shading_padding_and_different_silhouettes(self):
         sprites = []
         for key in ('thumbs_up', 'thumbs_down'):

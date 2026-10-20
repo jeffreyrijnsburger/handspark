@@ -13,7 +13,7 @@ Het is een knipoog naar Apples videoreacties op de Mac. De gebaren volgen
 dezelfde indeling, met eigen animaties en herkenning via MediaPipe. Er zit geen
 Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk project.
 
-**0.3.1 · MIT-licentie · Linux · Nederlands / Engels**
+**0.4.0 · MIT-licentie · Linux · Nederlands / Engels**
 
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -27,7 +27,7 @@ https://github.com/jeffreyrijnsburger/handspark/releases/latest
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.
 Modellen, effecten en Python-afhankelijkheden zitten erin. OBS 30.2 of nieuwer,
 Qt, FFmpeg en een werkende `v4l2loopback`-driver zijn systeemafhankelijkheden.
-Windows en macOS worden in 0.3.1 niet ondersteund.
+Windows en macOS worden in 0.4.0 niet ondersteund.
 
 Volg de installatieopdrachten in [README.md](README.md#install-the-release).
 Gebruik voor Ubuntu 24.04 OBS uit `noble-backports`. Open **HandSpark** uit het
@@ -55,7 +55,8 @@ Laat hetzelfde gebaar los voordat je het herhaalt.
 Lasers, vuurwerk, ballonnen en confetti verschijnen achter je lichaam.
 
 De regenreactie heeft een belichte wolk, vallende druppels en twee vertakte
-bliksemflitsen. De duimreacties verschijnen in glanzende bubbels.
+bliksemflitsen. De gouden duim omhoog springt in beeld met een klein knikje en ronde confettistipjes.
+De duim omlaag verschijnt in een glanzende bubbel.
 
 ## Camera-uitvoer
 

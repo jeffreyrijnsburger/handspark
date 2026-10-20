@@ -104,6 +104,8 @@ def classify(hands):
     hands = unique
     if any(is_two_hand_heart(a, b) for a, b in combinations(hands, 2)):
         return 'heart'
+    if any(is_salute(hand) for hand in hands):
+        return 'prosper'
     poses = []
     for hand in hands:
         direction = _thumb_direction(hand)
@@ -165,6 +167,25 @@ def is_peace(landmarks):
     return _distance(landmarks[8], landmarks[12]) > scale * 0.25
 
 
+def is_salute(points):
+    if not _finger_pattern(points, (True, True, True, True)):
+        return False
+    scale = _distance(points[5], points[17])
+    across = [(points[17][c] - points[5][c]) / scale for c in (0, 1)]
+
+    def separation(a, b):
+        return abs(sum((points[b][c] - points[a][c]) * across[c] for c in (0, 1)))
+
+    gap = separation(12, 16)
+    if gap < 0.48 * scale:
+        return False
+    if any(separation(a, b) > min(0.42 * scale, 0.68 * gap)
+           for a, b in ((8, 12), (16, 20))):
+        return False
+    return (_distance(points[4], points[5]) > 0.6 * scale
+            and _distance(points[4], points[0]) > 1.05 * _distance(points[3], points[0]))
+
+
 def reaction_anchor(reaction, hands, aspect=1.0):
     """Position localized effects near the gesture; full-frame effects stay put."""
     if reaction == 'heart' and len(hands) >= 2:
@@ -177,7 +198,8 @@ def reaction_anchor(reaction, hands, aspect=1.0):
         for hand in hands:
             if check(hand):
                 x = (hand[0][0] + hand[5][0]) / (2 * aspect)
-                y = max(0.2, min(0.6, (hand[4][1] + hand[0][1]) / 2 - 0.12))
+                minimum_y = 0.32 if reaction == 'thumbs_up' else 0.2
+                y = max(minimum_y, min(0.6, (hand[4][1] + hand[0][1]) / 2 - 0.12))
                 return (0.76 if x < 0.5 else 0.24, y)
     return None
 
@@ -216,7 +238,7 @@ class ReactionTrigger:
     def progress(self, now):
         if not self.held_gesture or self.held_since is None:
             return 0.0
-        required = self.single_hold if self.held_gesture in ('thumbs_up', 'thumbs_down', 'balloons') else self.hold
+        required = self.single_hold if self.held_gesture in ('thumbs_up', 'thumbs_down', 'balloons', 'prosper') else self.hold
         return min(1.0, max(0, (min(now, self.last_seen) - self.held_since) / required))
 
     def update(self, gesture, now):
@@ -241,7 +263,7 @@ class ReactionTrigger:
         self.last_seen = now
         # Leave a short grace period to bring the second hand into view, so
         # fireworks/confetti/rain are not preempted by a single-hand reaction.
-        required_hold = self.single_hold if gesture in ('thumbs_up', 'thumbs_down', 'balloons') else self.hold
+        required_hold = self.single_hold if gesture in ('thumbs_up', 'thumbs_down', 'balloons', 'prosper') else self.hold
         eligible = self.armed or (gesture != self.last_reaction and not self.require_release)
         if (eligible and not self.require_release and self.samples >= 3
                 and now - self.held_since >= required_hold

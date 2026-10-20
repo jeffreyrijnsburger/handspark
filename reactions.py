@@ -13,6 +13,7 @@ REACTIONS = {
     'fireworks': 'Vuurwerk bij twee duimen omhoog',
     'lasers': 'Lasers bij metal horns',
 }
+ALL_REACTIONS = {**REACTIONS, 'prosper': 'Orbitale groet'}
 GESTURE_LABELS = {
     'heart': 'Hartje vormen met twee handen',
     'balloons': 'Een vredesteken (V)',

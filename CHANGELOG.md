@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 — 2026-10-20
+
+- Give thumbs up a larger golden hand, a spring entrance, a playful nod and
+  colorful round confetti, with crisp shapes at 360p.
+- Keep the expanded thumbs-up animation inside its localized camera placement.
+- Replace the app logo with a clear raised hand and simple motion lines;
+  remove the four-point sparkle.
+- Add a preview made from the actual encoded thumbs-up animation.
+
 ## 0.3.1 — 2026-10-20
 
 - Give every gesture and reaction an icon in both README overviews.

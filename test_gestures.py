@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from gestures import (ReactionTrigger, classify, is_horns, is_peace,
+from gestures import (ReactionTrigger, classify, is_horns, is_peace, is_salute,
                       is_thumbs_up, is_thumbs_down, is_two_hand_heart, reaction_anchor)
 
 
@@ -33,6 +33,15 @@ def side_on_thumb():
     )]
 
 
+def salute():
+    points = hand((True, True, True, True))
+    points[2], points[3], points[4] = [0.25, 0.65], [0.19, 0.59], [0.12, 0.53]
+    for index, tip in ((8, [0.32, 0.28]), (12, [0.38, 0.23]),
+                       (16, [0.62, 0.26]), (20, [0.68, 0.33])):
+        points[index] = tip
+    return points
+
+
 def heart_hands():
     a = hand((False, False, False, False))
     a[0] = [0.25, 0.8]
@@ -49,6 +58,39 @@ def pair(points):
 
 
 class GestureTests(unittest.TestCase):
+    def test_salute_pairs_remain_distinct_when_rotated_or_mirrored(self):
+        for sign in (-1, 1):
+            for angle in (0, 0.6, 1.8, math.pi):
+                c, s = math.cos(angle), math.sin(angle)
+                points = [[sign * x * c - y * s, sign * x * s + y * c] for x, y in salute()]
+                with self.subTest(sign=sign, angle=angle):
+                    self.assertTrue(is_salute(points))
+                    self.assertEqual(classify([points]), 'prosper')
+
+    def test_open_palms_wide_fingers_and_folded_thumb_are_not_salutes(self):
+        wide = salute()
+        for index, x in ((8, 0.1), (12, 0.35), (16, 0.6), (20, 0.85)):
+            wide[index] = [x, 0.28]
+        folded = salute()
+        folded[4] = folded[5][:]
+        bent = salute()
+        bent[20] = [0.65, 0.7]
+        for points in (hand((True, True, True, True)), wide, folded, bent, [], thumbs_up()):
+            self.assertFalse(is_salute(points))
+            self.assertNotEqual(classify([points]), 'prosper')
+
+    def test_salute_needs_a_deliberate_single_hand_hold(self):
+        trigger = ReactionTrigger()
+        for t in (0, 0.2, 0.4, 0.6, 0.8):
+            self.assertIsNone(trigger.update('prosper', t))
+        self.assertEqual(trigger.update('prosper', 0.9), 'prosper')
+        self.assertIsNone(trigger.update('prosper', 2))
+
+    def test_salute_tolerates_a_shorter_pinky_without_widening_its_pair(self):
+        points = salute()
+        points[20] = [0.68, 0.4]
+        self.assertTrue(is_salute(points))
+
     def test_all_eight_documented_mappings(self):
         up = thumbs_up()
         down = [[1 - x, 1 - y] for x, y in up]

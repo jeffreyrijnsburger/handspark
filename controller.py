@@ -17,7 +17,7 @@ import uuid
 import websocket
 
 from gestures import ReactionTrigger, classify, reaction_anchor
-from reactions import ANCHOR_REFERENCE, ASSET_DIR, DEFAULT_ANCHOR, REACTIONS
+from reactions import ALL_REACTIONS, ANCHOR_REFERENCE, ASSET_DIR, DEFAULT_ANCHOR, REACTIONS
 from settings import load_settings, update_settings
 
 
@@ -97,7 +97,7 @@ def configure(obs):
         'framerate': (1 << 32) | 30, 'buffering': False,
     }, True)
     overlays = {}
-    for reaction, name in REACTIONS.items():
+    for reaction, name in ALL_REACTIONS.items():
         overlays[reaction] = ensure_input(obs, name, 'ffmpeg_source', {
             'is_local_file': True, 'local_file': str(ASSET_DIR / (reaction + '.mov')),
             'looping': False, 'restart_on_activate': True,
@@ -139,7 +139,7 @@ def fire(obs, overlays, reaction, anchor=None):
     for key, item in overlays.items():
         obs.call('SetSceneItemEnabled', sceneName=SCENE, sceneItemId=item,
                  sceneItemEnabled=key == reaction)
-    obs.call('TriggerMediaInputAction', inputName=REACTIONS[reaction],
+    obs.call('TriggerMediaInputAction', inputName=ALL_REACTIONS[reaction],
              mediaAction='OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART')
     LOG.info('Gebarenreactie gestart: %s', reaction)
 
