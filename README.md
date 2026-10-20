@@ -21,6 +21,10 @@ https://github.com/jeffreyrijnsburger/handspark/releases/latest
 Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 [AGENTS.md](AGENTS.md) · [CLI contract](docs/CLI.md).
 
+![HandSpark with a generated metal-horns demo person and its actual laser effect](docs/handspark-demo.png)
+
+*Illustrative screenshot: AI-generated demo person, actual HandSpark lasers and native controls. [How it was made](docs/DEMO.md).*
+
 ## What you get
 
 - Eight automatic hand reactions and eight manual reaction buttons.

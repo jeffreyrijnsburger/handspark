@@ -18,6 +18,10 @@ Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk projec
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
 
+![HandSpark met een gegenereerde demo-persoon en de echte lasereffecten](docs/handspark-demo.png)
+
+*De persoon is gegenereerd; de lasers komen uit de app. [Werkwijze](docs/DEMO.md).*
+
 ## Installeren
 
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.

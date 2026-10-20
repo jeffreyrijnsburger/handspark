@@ -1,7 +1,8 @@
 HandSpark 0.1.1 upgrades the laser reaction to a full concert stage.
 
 - Sixteen sweeping neon beams with soft volumetric cones and bright cores.
-- Projector flares, expanding rings, drifting haze and a moving perspective floor.
+- Projector flares, rotating 3D light ribbons, depth streaks, expanding rings,
+  drifting haze and a moving perspective floor.
 - Smooth fan choreography and a saturated glow that stays behind your body.
 - Source fingerprints rebuild stale animation caches automatically.
 - Main now requires pull requests and passing tests, including for admins.

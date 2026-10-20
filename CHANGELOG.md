@@ -4,7 +4,8 @@
 
 - Default new installations to English while preserving existing saved languages.
 - Upgrade lasers to a concert stage: sixteen sweeping neon beams, volumetric
-  light, projector flares, expanding rings, floating haze and a moving perspective floor.
+  light, projector flares, rotating 3D light ribbons, depth streaks, expanding
+  rings, floating haze and a moving perspective floor.
 - Preserve vivid colors at soft glow edges in transparent video.
 - Invalidate cached animations when their rendering source changes.
 - Add a synthetic animated laser preview and regression coverage.
