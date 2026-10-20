@@ -32,7 +32,7 @@ class PreferenceTests(unittest.TestCase):
         settings.update_settings(automatic=False, depth=True, language='en')
         settings.update_settings(depth=False)
         values = json.loads(self.path.read_text())
-        self.assertEqual(values, {'automatic': False, 'depth': False, 'language': 'en'})
+        self.assertEqual(values, {**settings.DEFAULTS, 'automatic': False, 'depth': False, 'language': 'en'})
         settings.update_settings(language='nl')
         self.assertFalse(settings.load_settings()['automatic'])
         self.assertEqual(self.path.stat().st_mode & 0o777, 0o600)
@@ -48,7 +48,26 @@ class PreferenceTests(unittest.TestCase):
         changes = [{'automatic': False}, {'depth': False}, {'language': 'en'}] * 10
         with ThreadPoolExecutor(max_workers=3) as executor:
             list(executor.map(lambda change: settings.update_settings(**change), changes))
-        self.assertEqual(settings.load_settings(), {'automatic': False, 'depth': False, 'language': 'en'})
+        self.assertEqual(settings.load_settings(), {**settings.DEFAULTS, 'automatic': False, 'depth': False, 'language': 'en'})
+
+    def test_preview_changes_preserve_saved_language_and_camera_controls(self):
+        settings.update_settings(language='nl', automatic=False)
+        settings.update_settings(preview_resolution=720, preview_fps=24)
+        settings.update_settings(depth=False)
+        values = settings.load_settings()
+        self.assertEqual((values['preview_resolution'], values['preview_fps']), (720, 24))
+        self.assertEqual(values['language'], 'nl')
+        self.assertFalse(values['automatic'])
+        self.assertFalse(values['depth'])
+
+    def test_invalid_preview_values_fall_back_and_cannot_be_saved(self):
+        self.path.parent.mkdir()
+        self.path.write_text('{"preview_resolution": true, "preview_fps": 120}')
+        self.assertEqual(settings.load_settings()['preview_resolution'], 360)
+        self.assertEqual(settings.load_settings()['preview_fps'], 30)
+        for change in ({'preview_resolution': 1080}, {'preview_fps': 60}, {'preview_fps': True}):
+            with self.assertRaises(ValueError):
+                settings.update_settings(**change)
 
     def test_control_errors_use_current_language_without_restarting_camera(self):
         runtime = Path(self.folder.name) / 'runtime'

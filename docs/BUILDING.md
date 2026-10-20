@@ -31,7 +31,7 @@ Generated models, clips, venvs and user data are excluded from Git.
 
 ```sh
 .venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers -v
-QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel -v
+QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
 ```
 
 Unit tests cover gesture geometry, two-hand priority, duplicate rejection,
@@ -43,7 +43,7 @@ Hardware validation also needs a physical webcam, loopback device and OBS.
 
 ```sh
 python3 tools/build_deb.py
-dpkg-deb --info dist/handspark_0.1.1_ubuntu24.04_amd64.deb
+dpkg-deb --info dist/handspark_0.2.0_ubuntu24.04_amd64.deb
 (cd dist && sha256sum -c SHA256SUMS)
 ```
 

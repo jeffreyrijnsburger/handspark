@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — 2026-10-20
+
+- Replace the roughly 2-fps screenshot preview with a live feed of the actual
+  virtual camera, independent of status polling and gesture processing.
+- Select 360p, 540p or 720p preview resolution and 15, 24 or 30 fps in the panel.
+  Default to 360p/30 fps and save the selection across launches.
+- Add offline CLI preview configuration for humans and agents.
+- Drop stale preview frames and stop the reader when the window/camera closes.
+- Preserve the saved language and the camera output used by meeting clients.
+
 ## 0.1.1 — 2026-10-20
 
 - Default new installations to English while preserving existing saved languages.

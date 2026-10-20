@@ -54,6 +54,12 @@ module itself.
 
 ## OBS configuration
 
+The panel reads the composited virtual camera through FFmpeg, in memory.
+It finds the device by its `Teams Effects` or `OBS Virtual Camera` card label,
+falling back to `/dev/video42`. With multiple virtual cameras, set
+`HANDSPARK_PREVIEW_DEVICE=/dev/videoN` in the panel's environment to choose one.
+The preview reader closes when its window closes; the backend continues running.
+
 First start creates the `Teams Effects` profile and collection under
 `~/.config/obs-studio/` and enables authenticated OBS WebSocket on port 4467.
 An existing OBS WebSocket configuration is backed up before the initial change.

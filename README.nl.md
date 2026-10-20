@@ -13,7 +13,7 @@ Het is een knipoog naar Apples videoreacties op de Mac. De gebaren volgen
 dezelfde indeling, met eigen animaties en herkenning via MediaPipe. Er zit geen
 Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk project.
 
-**0.1.1 · MIT-licentie · Linux · Nederlands / Engels**
+**0.2.0 · MIT-licentie · Linux · Nederlands / Engels**
 
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -27,7 +27,7 @@ https://github.com/jeffreyrijnsburger/handspark/releases/latest
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.
 Modellen, effecten en Python-afhankelijkheden zitten erin. OBS 30.2 of nieuwer,
 Qt, FFmpeg en een werkende `v4l2loopback`-driver zijn systeemafhankelijkheden.
-Windows en macOS worden in 0.1.1 niet ondersteund.
+Windows en macOS worden in 0.2.0 niet ondersteund.
 
 Volg de installatieopdrachten in [README.md](README.md#install-the-release).
 Gebruik voor Ubuntu 24.04 OBS uit `noble-backports`. Open **HandSpark** uit het
@@ -53,6 +53,11 @@ Laat hetzelfde gebaar los voordat je het herhaalt.
 Lasers, vuurwerk, ballonnen en confetti verschijnen achter je lichaam.
 
 ## Bedienen en taal
+
+Het livevoorbeeld toont maximaal 30 fps. Onder **Voorbeeld** kies je **360p,
+540p of 720p** en **15, 24 of 30 fps**. Standaard staat het op 360p/30 fps.
+De keuze wordt direct toegepast en onthouden. Hiermee verander je het
+voorbeeldvenster; de camerauitvoer voor je gesprek blijft 720p/30 fps.
 
 In het venster zie je het uiteindelijke camerabeeld en acht reactieknoppen.
 **Automatische reacties** pauzeert de gebarenherkenning.
