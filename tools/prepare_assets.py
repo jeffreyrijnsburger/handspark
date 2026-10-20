@@ -36,8 +36,15 @@ def main():
     if not args.models_only:
         sys.path.insert(0, str(BASE))
         from reactions import REACTIONS
+        from render_reactions import asset_signature
+        try:
+            signatures = json.loads((BASE / 'reactions-apple/render-manifest.json').read_text())
+        except (OSError, ValueError):
+            signatures = {}
+        signature = asset_signature()
         for reaction in REACTIONS:
-            if not (BASE / 'reactions-apple' / (reaction + '.mov')).exists():
+            if (not (BASE / 'reactions-apple' / (reaction + '.mov')).exists()
+                    or signatures.get(reaction) != signature):
                 subprocess.run([sys.executable, str(BASE / 'render_reactions.py'), reaction], check=True)
 
 

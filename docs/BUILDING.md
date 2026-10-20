@@ -30,7 +30,7 @@ Generated models, clips, venvs and user data are excluded from Git.
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli -v
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel -v
 ```
 
@@ -43,7 +43,7 @@ Hardware validation also needs a physical webcam, loopback device and OBS.
 
 ```sh
 python3 tools/build_deb.py
-dpkg-deb --info dist/handspark_0.1.0_ubuntu24.04_amd64.deb
+dpkg-deb --info dist/handspark_0.1.1_ubuntu24.04_amd64.deb
 (cd dist && sha256sum -c SHA256SUMS)
 ```
 
@@ -60,7 +60,7 @@ bit-for-bit reproducibility across different build machines or future apt mirror
 ## Publish a version
 
 1. Update `VERSION` and `CHANGELOG.md`; follow SemVer with `0.x.y` while experimental.
-2. Run tests and validate the package. Commit with a semantic message.
+2. Run tests and validate the package. Open a feature-branch pull request with a semantic title, wait for the required `test` check, and squash-merge into protected main.
 3. Create an annotated `v0.x.y` tag matching `VERSION`.
 4. The release workflow builds/tests on Ubuntu 24.04, creates the GitHub Release
    and attaches the `.deb` and `SHA256SUMS`. GitHub supplies source archives.
