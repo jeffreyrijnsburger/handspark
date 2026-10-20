@@ -35,6 +35,7 @@ class ControlTests(unittest.TestCase):
     def test_invalid_commands_never_reach_the_camera(self):
         server = control.Control()
         for data in ({'command': 'react', 'reaction': 'unknown'},
+                     {'command': 'react', 'reaction': 'prosper'},
                      {'command': 'automatic', 'enabled': 'false'}, {'command': 'delete'}):
             self.assertFalse(server.handle(data)['ok'])
         self.assertTrue(server.commands.empty())

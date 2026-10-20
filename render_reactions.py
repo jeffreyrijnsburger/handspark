@@ -16,7 +16,7 @@ import subprocess
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-from reactions import ASSET_DIR, REACTIONS
+from reactions import ALL_REACTIONS, ASSET_DIR
 
 WIDTH, HEIGHT, FPS, DURATION = 960, 540, 24, 5
 BASE = Path(__file__).resolve().parent
@@ -26,7 +26,7 @@ PALETTE = [(255, 75, 115), (50, 185, 255), (255, 205, 65),
 
 def asset_signature():
     digest = hashlib.sha256()
-    for name in ('render_reactions.py', 'laser_show.py', 'rain_cloud.py', 'reactions.py',
+    for name in ('render_reactions.py', 'laser_show.py', 'rain_cloud.py', 'thumb_show.py', 'prosper_show.py', 'reactions.py',
                  'emoji/emoji_u1f44d.png', 'emoji/emoji_u1f44e.png'):
         digest.update((BASE / name).read_bytes())
     return digest.hexdigest()
@@ -80,7 +80,11 @@ class Renderer:
                 size = self.rng.randint(55, 108)
                 image = sprite.resize((size, size), Image.Resampling.LANCZOS)
                 self.particles.append((image, i * 0.07, self.rng.uniform(-1, 1), self.rng.random() * math.tau))
-        elif reaction in ('thumbs_up', 'thumbs_down'):
+        elif reaction == 'thumbs_up':
+            from thumb_show import ThumbsUp
+            self.thumb_show = ThumbsUp(WIDTH, HEIGHT, DURATION)
+            self.bubble = self.thumb_show.bubble
+        elif reaction == 'thumbs_down':
             self.bubble = self.make_bubble(reaction)
         elif reaction == 'balloons':
             for i in range(12):
@@ -119,6 +123,9 @@ class Renderer:
         elif reaction == 'lasers':
             from laser_show import LaserShow
             self.laser_show = LaserShow(WIDTH, HEIGHT, DURATION)
+        elif reaction == 'prosper':
+            from prosper_show import OrbitalSalute
+            self.salute = OrbitalSalute(WIDTH, HEIGHT, DURATION)
 
     def make_bubble(self, reaction):
         size = 256
@@ -183,7 +190,7 @@ class Renderer:
         return frame
 
     def thumbs_up(self, t):
-        return self.thumb_frame(t)
+        return self.thumb_show.frame(t)
 
     def thumbs_down(self, t):
         return self.thumb_frame(t)
@@ -315,6 +322,9 @@ class Renderer:
     def lasers(self, t):
         return self.laser_show.frame(t)
 
+    def prosper(self, t):
+        return self.salute.frame(t)
+
 
 def render(reaction):
     ASSET_DIR.mkdir(exist_ok=True)
@@ -353,9 +363,9 @@ def render(reaction):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('reaction', choices=(*REACTIONS, 'all'))
+    parser.add_argument('reaction', choices=(*ALL_REACTIONS, 'all'), metavar='REACTION')
     args = parser.parse_args()
-    for reaction in (REACTIONS if args.reaction == 'all' else [args.reaction]):
+    for reaction in (ALL_REACTIONS if args.reaction == 'all' else [args.reaction]):
         render(reaction)
 
 

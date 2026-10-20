@@ -10,7 +10,7 @@ from control import RUNTIME
 
 FOREGROUND = 'Teams Foreground'
 FILTER = 'Persoonsmasker'
-BACKGROUND_REACTIONS = frozenset(('lasers', 'fireworks', 'balloons', 'confetti'))
+BACKGROUND_REACTIONS = frozenset(('lasers', 'fireworks', 'balloons', 'confetti', 'prosper'))
 
 
 def soften_person(probability, hands=(), previous=None):
