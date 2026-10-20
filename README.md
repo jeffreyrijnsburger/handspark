@@ -13,7 +13,7 @@ gesture mappings and independently written animations. No Apple software or
 proprietary effects are included. This is a community project, unaffiliated with
 Apple, Microsoft or OBS.
 
-**Version 0.2.0 · MIT · Linux · Dutch / English**
+**Version 0.2.1 · MIT · Linux · Dutch / English**
 
 Latest ready-to-install build:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -47,7 +47,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 | --- | --- |
 | Ubuntu 24.04, amd64, KDE/X11, Python 3.12 | Tested target; `.deb` available |
 | Other Linux distributions / Wayland | May work from source; untested |
-| Windows / macOS | Not supported in 0.2.0 |
+| Windows / macOS | Not supported in 0.2.1 |
 
 The current implementation uses OBS Studio, V4L2 loopback and a systemd user
 service. Recognition and rendering could be reused for other platforms, but
@@ -63,14 +63,14 @@ checksum-pinned models and rendered animations. You do **not** need to clone
 the repository, install pip packages or render effects to use that build.
 System OBS, Qt, FFmpeg and a working V4L2 loopback driver are still required.
 
-1. Download `handspark_0.2.0_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
+1. Download `handspark_0.2.1_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
 2. From that download folder:
 
    ```sh
    sha256sum -c SHA256SUMS
    sudo apt update
    sudo apt install -t noble-backports obs-studio
-   sudo apt install ./handspark_0.2.0_ubuntu24.04_amd64.deb
+   sudo apt install ./handspark_0.2.1_ubuntu24.04_amd64.deb
    ```
 
    OBS 30.2 or newer is required. Ubuntu 24.04's original OBS 30.0 package can
@@ -125,6 +125,7 @@ selection and persistent driver configuration are covered in [docs/LINUX.md](doc
 | Metal horns 🤘 with **both** hands | Lasers | `lasers` |
 
 Keep your hands visible and hold the gesture briefly, roughly one second.
+For thumbs up/down, close your other fingers and fully extend your thumb.
 For the heart, bring your index fingertips together above and your thumb tips
 together below. Two-hand gestures take priority over their one-hand variants.
 Short tracking gaps are tolerated and duplicate hand tracks are rejected.
@@ -237,7 +238,7 @@ during source setup/build, not during ordinary use of the `.deb`.
 ## Development and releases
 
 See [docs/BUILDING.md](docs/BUILDING.md) for source installation, tests and the
-`.deb` build. Versioning uses SemVer starting at `0.2.0`; each release has a
+`.deb` build. Versioning uses SemVer with `0.x.y` versions; each release has a
 `v0.x.y` tag, notes, a downloadable build and checksums. Interfaces can evolve
 during 0.x; the CLI schema is versioned separately. See [CHANGELOG.md](CHANGELOG.md).
 

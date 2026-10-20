@@ -109,7 +109,7 @@ class Renderer:
             self.cloud = self.make_cloud()
             self.particles = [(self.rng.uniform(0.18, 0.82) * WIDTH,
                                self.rng.uniform(0, HEIGHT), self.rng.uniform(450, 750),
-                               self.rng.uniform(8, 22)) for _ in range(180)]
+                               self.rng.uniform(8, 24), self.rng.random()) for _ in range(180)]
         elif reaction == 'lasers':
             from laser_show import LaserShow
             self.laser_show = LaserShow(WIDTH, HEIGHT, DURATION)
@@ -132,14 +132,34 @@ class Renderer:
         return bubble
 
     def make_cloud(self):
-        cloud = Image.new('RGBA', (620, 155))
-        draw = ImageDraw.Draw(cloud)
-        for i in range(12):
-            x = 30 + i * 46
-            y = 18 + 13 * math.sin(i * 1.8)
-            draw.ellipse((x - 45, y, x + 72, y + 110), fill=(121, 130, 145, 205))
-        draw.rounded_rectangle((30, 65, 590, 125), radius=35, fill=(115, 123, 137, 210))
-        return cloud.filter(ImageFilter.GaussianBlur(7))
+        # Leave room on every side for complete lobes and the blurred shadow.
+        # Draw the silhouette at double resolution for soft, rounded edges.
+        size = (700, 220)
+        mask = Image.new('L', (size[0] * 2, size[1] * 2))
+        draw = ImageDraw.Draw(mask)
+        lobes = ((106, 118, 66, 43), (164, 106, 78, 60), (250, 92, 88, 62),
+                 (350, 98, 99, 68), (448, 91, 91, 60), (539, 112, 82, 56),
+                 (603, 128, 58, 40))
+        yy, xx = np.mgrid[:size[1], :size[0]].astype(np.float32)
+        volume = np.zeros(size[::-1], dtype=np.float32)
+        for x, y, rx, ry in lobes:
+            draw.ellipse(((x - rx) * 2, (y - ry) * 2,
+                          (x + rx) * 2, (y + ry) * 2), fill=255)
+            dome = np.sqrt(np.maximum(0, 1 - ((xx - x) / rx) ** 2 - ((yy - y) / ry) ** 2))
+            volume = np.maximum(volume, dome)
+        draw.rounded_rectangle((198, 224, 1216, 338), radius=60, fill=255)
+        mask = mask.resize(size, Image.Resampling.LANCZOS).filter(ImageFilter.GaussianBlur(1.2))
+        highlight = np.exp(-((xx - 290) / 250) ** 2 - ((yy - 65) / 85) ** 2)
+        rgba = np.zeros((size[1], size[0], 4), dtype=np.uint8)
+        for channel, base in enumerate((67, 81, 103)):
+            rgba[:, :, channel] = np.clip(base + 62 * volume + 33 * highlight - yy * 0.09, 0, 255)
+        rgba[:, :, 3] = np.asarray(mask) * 0.94
+        shadow = Image.new('RGBA', size, (16, 23, 37, 0))
+        shadow.putalpha(mask.filter(ImageFilter.GaussianBlur(7)).point(lambda a: round(a * 0.32)))
+        cloud = Image.new('RGBA', size)
+        cloud.alpha_composite(shadow, (0, 7))
+        cloud.alpha_composite(Image.fromarray(rgba))
+        return cloud
 
     def frame(self, t):
         method = getattr(self, self.reaction)
@@ -246,12 +266,20 @@ class Renderer:
     def rain(self, t):
         fade = envelope(t)
         frame = Image.new('RGBA', (WIDTH, HEIGHT), (15, 23, 38, round(28 * fade)))
-        frame.alpha_composite(opacity(self.cloud, fade), (round((WIDTH - self.cloud.width) / 2), 0))
+        cloud_x = round((WIDTH - self.cloud.width) / 2 + 3 * math.sin(t * 0.7))
+        cloud_y = round(6 + 2 * math.sin(t * 1.1))
         draw = ImageDraw.Draw(frame)
-        for x, offset, speed, length in self.particles:
-            y = 90 + (offset + t * speed) % (HEIGHT - 70)
-            dx = -length * 0.16
-            draw.line((x, y, x + dx, y + length), fill=(195, 215, 239, round(115 * fade)), width=1)
+        top = cloud_y + 135
+        wind = 5 * math.sin(t * 1.3)
+        for x, offset, speed, length, depth in self.particles:
+            y = top + (offset + t * speed) % (HEIGHT + 30 - top)
+            dx = -length * 0.18
+            draw.line((x + wind, y, x + wind + dx, y + length),
+                      fill=(185, 210, 242, round((75 + 105 * depth) * fade)),
+                      width=1 if depth < 0.65 else 2)
+        # The cloud covers the rain's spawn points instead of drops crossing
+        # its surface. The complete padded sprite stays inside the video.
+        frame.alpha_composite(opacity(self.cloud, fade), (cloud_x, cloud_y))
         return frame
 
     def lasers(self, t):

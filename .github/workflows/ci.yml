@@ -20,5 +20,5 @@ jobs:
           cache-dependency-path: requirements.lock
       - run: sudo apt-get update && sudo apt-get install -y python3-pyqt5 ffmpeg libgl1 libportaudio2
       - run: python -m venv .venv && .venv/bin/python -m pip install -r requirements.lock
-      - run: .venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers -v
+      - run: .venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions -v
       - run: QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v

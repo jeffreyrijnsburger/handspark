@@ -23,6 +23,16 @@ def thumbs_up():
     return points
 
 
+def side_on_thumb():
+    return [[x, y] for x, y in (
+        (0.50, 0.85), (0.45, 0.76), (0.42, 0.69), (0.40, 0.52), (0.39, 0.33),
+        (0.47, 0.59), (0.58, 0.53), (0.60, 0.59), (0.51, 0.63),
+        (0.55, 0.61), (0.67, 0.56), (0.67, 0.65), (0.55, 0.69),
+        (0.60, 0.65), (0.72, 0.62), (0.71, 0.70), (0.58, 0.74),
+        (0.64, 0.70), (0.73, 0.69), (0.71, 0.76), (0.62, 0.78),
+    )]
+
+
 def heart_hands():
     a = hand((False, False, False, False))
     a[0] = [0.25, 0.8]
@@ -34,8 +44,8 @@ def heart_hands():
 
 
 def pair(points):
-    return ([[x * 0.5, y] for x, y in points],
-            [[x * 0.5 + 0.5, y] for x, y in points])
+    return ([[x * 0.5, y * 0.5] for x, y in points],
+            [[x * 0.5 + 0.5, y * 0.5] for x, y in points])
 
 
 class GestureTests(unittest.TestCase):
@@ -106,6 +116,55 @@ class GestureTests(unittest.TestCase):
         self.assertFalse(is_thumbs_up([[x, 1 - y] for x, y in points]))
         self.assertFalse(is_thumbs_up(hand((False, False, False, False))))
         self.assertEqual(classify([points]), 'thumbs_up')
+
+    def test_deliberate_thumbs_survive_tilt_scale_and_mirroring(self):
+        for sign in (-1, 1):
+            for angle in (-0.4, 0, 0.4):
+                for scale in (0.3, 1, 2):
+                    c, s = math.cos(angle), math.sin(angle)
+                    up = [[scale * (sign * x * c - y * s) + 0.2,
+                           scale * (sign * x * s + y * c) - 0.1]
+                          for x, y in thumbs_up()]
+                    down = [[x, -y] for x, y in up]
+                    with self.subTest(sign=sign, angle=angle, scale=scale):
+                        self.assertEqual(classify([up]), 'thumbs_up')
+                        self.assertEqual(classify([down]), 'thumbs_down')
+                        self.assertEqual(classify(pair(up)), 'fireworks')
+                        self.assertEqual(classify(pair(down)), 'rain')
+
+    def test_side_on_closed_fist_has_a_clear_thumb(self):
+        up = side_on_thumb()
+        for points in (up, [[1 - x, y] for x, y in up]):
+            self.assertEqual(classify([points]), 'thumbs_up')
+            self.assertEqual(classify(pair(points)), 'fireworks')
+            down = [[x, 1 - y] for x, y in points]
+            self.assertEqual(classify([down]), 'thumbs_down')
+            self.assertEqual(classify(pair(down)), 'rain')
+
+    def test_partial_and_bent_thumbs_do_not_form_reactions(self):
+        cases = {
+            'short_extension': {2: [0.25, 0.7], 3: [0.24, 0.63], 4: [0.23, 0.55]},
+            'bent_joint': {2: [0.25, 0.7], 3: [0.15, 0.5], 4: [0.28, 0.32]},
+            'inside_fist': {2: [0.25, 0.85], 3: [0.23, 0.675], 4: [0.21, 0.50]},
+            'sideways': {2: [0.25, 0.7], 3: [0.11, 0.56], 4: [-0.03, 0.42]},
+            'unfolded_finger': {6: [0.35, 0.77], 7: [0.35, 0.81], 8: [0.35, 0.85]},
+        }
+        for name, changes in cases.items():
+            points = thumbs_up()
+            for index, value in changes.items():
+                points[index] = value
+            for mirror in (False, True):
+                up = [[1 - x if mirror else x, y] for x, y in points]
+                down = [[x, 1 - y] for x, y in up]
+                with self.subTest(pose=name, mirror=mirror):
+                    self.assertFalse(is_thumbs_up(up))
+                    self.assertFalse(is_thumbs_down(down))
+                    self.assertIsNone(classify([up]))
+                    for pose in (up, down):
+                        self.assertIsNone(classify(pair(pose)))
+                    trigger = ReactionTrigger()
+                    self.assertTrue(all(trigger.update(classify([up]), i / 8) is None
+                                        for i in range(25)))
 
     def test_heart_requires_two_meeting_hands(self):
         a, b = heart_hands()

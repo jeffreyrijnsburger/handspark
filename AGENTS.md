@@ -32,7 +32,7 @@ Python 3.12; Ubuntu 24.04 amd64/X11 is the tested target. Windows and macOS
 camera backends are not implemented. Use a venv from `requirements.lock`.
 
 ```sh
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers -v
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
 ```
 

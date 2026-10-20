@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 — 2026-10-20
+
+- Require a straight, fully extended thumb beyond folded fingers to reduce
+  accidental reactions, including their two-hand variants.
+- Preserve tilted and mirrored deliberate thumbs up/down.
+- Keep the whole rain cloud and its soft shadow inside the animation.
+- Add rounded cloud shading and layered, wind-swept rainfall beneath it.
+
 ## 0.2.0 — 2026-10-20
 
 - Replace the roughly 2-fps screenshot preview with a live feed of the actual
