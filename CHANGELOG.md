@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.0 — 2026-10-20
+
+- Add an optional system tray icon with Open, camera on/off and Quit actions.
+- Make × behavior configurable: stop camera and owned OBS (default), leave
+  camera running in the background, or hide the window in the tray.
+- Save preferences in Dutch/English controls and expose read-only discovery
+  and offline configuration through `on-close` and `tray` CLI commands.
+- Pause hidden previews, restore hidden windows when disabling/losing the
+  tray, and stop safely when hide-on-close has no available tray.
+- Stop video before quitting the owned OBS process, bound shutdown waits,
+  and release the mask model even after losing the OBS connection.
+- Keep the window responsive during shutdown, allow retry after stop errors,
+  and prevent in-flight startup from reopening video after closing.
+- Do not automatically reopen the camera after an OBS exit or failure.
+
 ## 0.5.0 — 2026-10-20
 
 - Add the small HaGRID hand-crop image classifier to support thumbs up/down,

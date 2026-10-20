@@ -70,6 +70,18 @@ class PreferenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 settings.update_settings(**change)
 
+    def test_closing_preferences_validate_and_preserve_camera_settings(self):
+        settings.update_settings(language='nl', output_resolution=540, close_action='tray', tray_enabled=True)
+        settings.update_settings(depth=False)
+        self.assertEqual(settings.load_settings()['close_action'], 'tray')
+        self.assertEqual(settings.load_settings()['output_resolution'], 540)
+        for change in ({'close_action': []}, {'close_action': 'unknown'}, {'tray_enabled': 'false'}):
+            with self.assertRaises(ValueError):
+                settings.update_settings(**change)
+        self.path.write_text('{"close_action": [], "tray_enabled": "yes"}')
+        self.assertEqual(settings.load_settings()['close_action'], 'stop')
+        self.assertTrue(settings.load_settings()['tray_enabled'])
+
     def test_control_errors_use_current_language_without_restarting_camera(self):
         runtime = Path(self.folder.name) / 'runtime'
         with patch.object(control, 'RUNTIME', runtime), patch.object(control, 'SOCKET', runtime / 'control.sock'):

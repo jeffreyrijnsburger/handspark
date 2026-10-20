@@ -25,7 +25,10 @@ and exit code 3.
 
 `handspark react lasers` starts the webcam if needed and triggers a reaction.
 Use camera-changing commands within the human's requested task. `cancel`
-stops an effect; `stop` stops the camera. Closing the panel leaves video on.
+stops an effect; `stop` stops the camera and owned OBS. Closing the panel stops
+video by default. `on-close [stop|background|tray] [--json]` reads/saves the ×
+action without changing the running camera; `tray [on|off] [--json]` controls
+the optional tray icon. Explicit tray Quit always stops video and owned OBS.
 Do not change an existing user's saved language unless asked. English is the
 default; Dutch is supported with `handspark language nl`.
 
@@ -36,7 +39,7 @@ camera backends are not implemented. Use a venv from `requirements.lock`.
 
 ```sh
 .venv/bin/python tools/prepare_assets.py --models-only
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream test_hagrid -v
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream test_hagrid test_lifecycle -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
 ```
 

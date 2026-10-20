@@ -103,5 +103,7 @@ class PersonMatte:
         self.generation += 1
 
     def close(self):
-        self.show(False)
-        self.model.close()
+        try:
+            self.show(False)
+        finally:
+            self.model.close()

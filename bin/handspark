@@ -12,7 +12,7 @@ BASE = candidate if (candidate / 'controller.py').exists() else Path.home() / '.
 sys.path.insert(0, str(BASE))
 from i18n import translate
 from reactions import REACTIONS
-from settings import LANGUAGES, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
+from settings import CLOSE_ACTIONS, LANGUAGES, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
 
 VERSION = (BASE / 'VERSION').read_text().strip()
 UNIT = 'teams-effects.service'
@@ -26,19 +26,19 @@ def main():
     language = load_settings()['language']
     parser = argparse.ArgumentParser(description='HandSpark: local gesture reactions for your Linux webcam.')
     parser.add_argument('--version', action='version', version='HandSpark ' + VERSION)
-    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language, preview, output and commands')
+    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language, preview, output, on-close, tray and commands')
     parser.add_argument('--resolution', type=int, choices=PREVIEW_RESOLUTIONS, help='Preview or camera output height in pixels')
     parser.add_argument('--fps', type=int, choices=PREVIEW_FPS, help='Preview frames per second')
     parser.add_argument('command', nargs='?', default='panel', choices=(
-        'panel', 'setup', 'start', 'stop', 'restart', 'status', 'list', 'language', 'preview', 'output',
+        'panel', 'setup', 'start', 'stop', 'restart', 'status', 'list', 'language', 'preview', 'output', 'on-close', 'tray',
         'pause', 'resume', 'cancel', 'react', 'commands', *REACTIONS))
     parser.add_argument('argument', nargs='?')
     args = parser.parse_args()
     action = args.command
-    if args.argument is not None and action not in ('language', 'react'):
+    if args.argument is not None and action not in ('language', 'react', 'on-close', 'tray'):
         parser.error('This command does not take an argument')
-    if args.json and action not in ('status', 'list', 'language', 'preview', 'output', 'commands'):
-        parser.error('--json is supported by status, list, language, preview, output and commands')
+    if args.json and action not in ('status', 'list', 'language', 'preview', 'output', 'on-close', 'tray', 'commands'):
+        parser.error('--json is supported by status, list, language, preview, output, on-close, tray and commands')
     if args.resolution is not None and action not in ('preview', 'output'):
         parser.error('--resolution is supported by preview and output')
     if args.fps is not None and action != 'preview':
@@ -57,6 +57,8 @@ def main():
             'language [nl|en]': 'Read or change the saved UI language',
             'preview [--resolution 360|540|720] [--fps 15|24|30]': 'Read or change preview quality without starting the camera',
             'output [--resolution 360|540|720]': 'Read or save camera output resolution; applies on next start/restart, fixed 30 fps',
+            'on-close [stop|background|tray]': 'Read or save window closing behavior without changing the running camera',
+            'tray [on|off]': 'Read or save system tray visibility; disabling tray resets hide-on-close to stop',
             'panel': 'Show the native control window',
             'setup': 'Configure this user’s OBS profile and service'},
             'languages': list(LANGUAGES), 'reactions': list(REACTIONS)})
@@ -113,6 +115,33 @@ def main():
                 return 3
             return 0
         return subprocess.call(['systemctl', '--user', 'status', '--no-pager', UNIT])
+    if action == 'on-close':
+        if args.argument is not None and args.argument not in CLOSE_ACTIONS:
+            parser.error('Choose stop, background or tray')
+        updates = {'close_action': args.argument}
+        if args.argument == 'tray':
+            updates['tray_enabled'] = True
+        values = (update_settings(**updates)
+                  if args.argument is not None else load_settings())
+        if args.json:
+            emit({'ok': True, 'close_action': values['close_action'], 'tray_enabled': values['tray_enabled']})
+        else:
+            print(values['close_action'])
+        return 0
+    if action == 'tray':
+        if args.argument is not None and args.argument not in ('on', 'off'):
+            parser.error('Choose on or off')
+        values = load_settings()
+        if args.argument is not None:
+            updates = {'tray_enabled': args.argument == 'on'}
+            if args.argument == 'off' and values['close_action'] == 'tray':
+                updates['close_action'] = 'stop'
+            values = update_settings(**updates)
+        if args.json:
+            emit({'ok': True, 'tray_enabled': values['tray_enabled'], 'close_action': values['close_action']})
+        else:
+            print('on' if values['tray_enabled'] else 'off')
+        return 0
     if action == 'stop':
         return subprocess.call(['systemctl', '--user', 'stop', UNIT])
     if action in ('pause', 'resume', 'cancel'):
@@ -134,6 +163,10 @@ def main():
                             'XDG_CURRENT_DESKTOP') if key in os.environ]
     if keys:
         subprocess.run(['systemctl', '--user', 'import-environment', *keys], check=True)
+    if action in ('start', 'restart'):
+        # Keep the panel's QProcess attached to the actual start client. Killing
+        # it must not leave a helper that can submit a late start after stop.
+        os.execvp('systemctl', ['systemctl', '--user', action, UNIT])
     subprocess.run(['systemctl', '--user', 'restart' if action == 'restart' else 'start', UNIT], check=True)
     if action in REACTIONS:
         from control import request

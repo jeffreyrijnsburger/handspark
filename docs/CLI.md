@@ -20,6 +20,8 @@ No network API or authentication token is needed to control the local app.
 | `language [nl\|en] [--json]` | Read / save the UI language, even offline |
 | `preview [--resolution 360\|540\|720] [--fps 15\|24\|30] [--json]` | Read / save preview resolution and frame rate, even offline |
 | `output [--resolution 360\|540\|720] [--json]` | Read / save camera output size; applies on next start/restart, fixed 30 fps |
+| `on-close [stop\|background\|tray] [--json]` | Read / save what × does; default `stop`; `tray` also enables the icon |
+| `tray [on\|off] [--json]` | Read / save tray visibility; disabling it resets `tray` close action to `stop` |
 | `commands --json` | Discover commands, languages and reaction IDs |
 
 JSON is one UTF-8 object per invocation. Every JSON response contains
@@ -41,15 +43,21 @@ feed and never restart or reconfigure the meeting camera.
 `restart` explicitly when ready. Default output is 360p. Online status includes
 actual `output_resolution` and `output_fps` reported by OBS. The panel's output
 selector saves and restarts an already running camera automatically.
+`on-close --json` and `tray --json` include `close_action` and `tray_enabled`.
+Reading or saving these settings does not start/stop a camera. An open panel
+applies changes automatically. `stop` closes video and owned OBS on ×;
+`background` exits the panel while video stays on; `tray` hides the panel while
+video stays on. Without a tray, `tray` falls back to stopping. The tray's Quit
+action always stops video and owned OBS. Independently started OBS stays open.
 Invalid syntax exits 2; general operational failures exit 1.
 An offline JSON status exits 3:
 
 ```json
-{"schema_version":1,"version":"0.5.0","ok":false,"error_code":"camera_offline"}
+{"schema_version":1,"version":"0.6.0","ok":false,"error_code":"camera_offline"}
 ```
 
 `status`, `list`, `commands`, `--version` and reading `language`, `preview` or
-`output` do not start a
+`output`, `on-close` or `tray` do not start a
 camera or change settings. Reactions are accepted through a private local queue;
 successful acceptance does not mean an effect has already finished. Poll status
 to follow its lifetime. Pausing gestures and changing language do not interrupt
