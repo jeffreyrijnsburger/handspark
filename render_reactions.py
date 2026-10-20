@@ -6,6 +6,8 @@ Emoji artwork already included in emoji/.
 """
 
 import argparse
+import hashlib
+import json
 import math
 from pathlib import Path
 import random
@@ -20,6 +22,14 @@ WIDTH, HEIGHT, FPS, DURATION = 960, 540, 24, 5
 BASE = Path(__file__).resolve().parent
 PALETTE = [(255, 75, 115), (50, 185, 255), (255, 205, 65),
            (135, 100, 255), (70, 235, 160), (255, 135, 55)]
+
+
+def asset_signature():
+    digest = hashlib.sha256()
+    for name in ('render_reactions.py', 'laser_show.py', 'reactions.py',
+                 'emoji/emoji_u1f44d.png', 'emoji/emoji_u1f44e.png'):
+        digest.update((BASE / name).read_bytes())
+    return digest.hexdigest()
 
 
 def envelope(t):
@@ -100,6 +110,9 @@ class Renderer:
             self.particles = [(self.rng.uniform(0.18, 0.82) * WIDTH,
                                self.rng.uniform(0, HEIGHT), self.rng.uniform(450, 750),
                                self.rng.uniform(8, 22)) for _ in range(180)]
+        elif reaction == 'lasers':
+            from laser_show import LaserShow
+            self.laser_show = LaserShow(WIDTH, HEIGHT, DURATION)
 
     def make_bubble(self, reaction):
         size = 208
@@ -242,22 +255,7 @@ class Renderer:
         return frame
 
     def lasers(self, t):
-        fade = envelope(t)
-        frame = Image.new('RGBA', (WIDTH, HEIGHT), (4, 3, 18, round(62 * fade)))
-        beams, glow = Image.new('RGBA', frame.size), Image.new('RGBA', frame.size)
-        draw, light = ImageDraw.Draw(beams), ImageDraw.Draw(glow)
-        colors = [(20, 255, 110), (40, 175, 255), (215, 50, 255), (255, 60, 145)]
-        for side in (0, 1):
-            origin = (WIDTH * (0.04 if side == 0 else 0.96), HEIGHT * 1.04)
-            for beam in range(4):
-                phase = t * (0.62 + beam * 0.12) + beam * 0.77 + side * 1.9
-                end = (WIDTH * (0.5 + 1.05 * math.sin(phase)), -HEIGHT * 0.35)
-                color = colors[(beam + side) % len(colors)]
-                light.line([origin, end], fill=(*color, round(105 * fade)), width=18)
-                draw.line([origin, end], fill=(*color, round(130 * fade)), width=5)
-                draw.line([origin, end], fill=(*color, round(240 * fade)), width=2)
-        frame = Image.alpha_composite(frame, glow.filter(ImageFilter.GaussianBlur(9)))
-        return Image.alpha_composite(frame, beams)
+        return self.laser_show.frame(t)
 
 
 def render(reaction):
@@ -283,6 +281,15 @@ def render(reaction):
         encoder.wait()
         temporary.unlink(missing_ok=True)
         raise
+    manifest = ASSET_DIR / 'render-manifest.json'
+    try:
+        signatures = json.loads(manifest.read_text())
+    except (OSError, ValueError):
+        signatures = {}
+    signatures[reaction] = asset_signature()
+    stamp = manifest.with_suffix('.tmp')
+    stamp.write_text(json.dumps(signatures, indent=2) + '\n')
+    stamp.replace(manifest)
     print(f'{reaction}: {output.stat().st_size:,} bytes', flush=True)
 
 

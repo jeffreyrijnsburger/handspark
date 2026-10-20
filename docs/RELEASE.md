@@ -1,17 +1,18 @@
-HandSpark's first public release: a playful nod to Apple's Mac video reactions,
-built independently for Linux webcams and Teams.
+HandSpark 0.1.1 upgrades the laser reaction to a full concert stage.
 
-- Eight automatic gestures and manual controls, including two-handed metal-horns lasers.
-- Soft person segmentation for effects behind your body.
-- Native preview window, desktop/taskbar icon, pause and stop controls.
-- Dutch/English configuration; Dutch is the default.
-- Documented JSON CLI for scripts and AI agents.
-- MIT-licensed original code and artwork.
+- Sixteen sweeping neon beams with soft volumetric cones and bright cores.
+- Projector flares, rotating 3D light ribbons, depth streaks, expanding rings,
+  drifting haze and a moving perspective floor.
+- Smooth fan choreography and a saturated glow that stays behind your body.
+- Source fingerprints rebuild stale animation caches automatically.
+- Main now requires pull requests and passing tests, including for admins.
 
-Download the `.deb` and `SHA256SUMS` below. The package targets **Ubuntu 24.04
-amd64 / Python 3.12 / X11** and includes Python inference packages, models and
-rendered effects. It requires OBS 30.2+ (noble-backports), Qt/FFmpeg and a working
-V4L2 loopback driver. Follow README.md's installation steps before first use.
+Trigger lasers with metal horns on **both hands** (🤘🤘), or `handspark react lasers`.
 
-Windows and macOS camera backends are not implemented. This is an initial 0.x
-release; gesture detection and segmentation depend on lighting and hand visibility.
+The `.deb` targets **Ubuntu 24.04 amd64 / Python 3.12 / X11**. It includes the
+inference dependencies, models and animations. OBS 30.2+ (noble-backports),
+Qt/FFmpeg and a working V4L2 loopback driver remain system dependencies.
+Follow README.md for installation. English is the default for new installs; saved Dutch preferences are preserved.
+
+HandSpark is an independent, MIT-licensed nod to Apple's Mac video reactions.
+Windows and macOS camera backends are not implemented.

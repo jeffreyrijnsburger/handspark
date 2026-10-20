@@ -38,6 +38,8 @@ class CliTests(unittest.TestCase):
         self.assertFalse((Path(self.folder.name) / '.config').exists())
 
     def test_language_option_changes_labels_and_preserves_reaction_ids(self):
+        self.assertEqual(json.loads(self.call('language', '--json').stdout)['language'], 'en')
+        self.assertEqual(self.call('language', 'nl').returncode, 0)
         dutch = json.loads(self.call('list', '--json').stdout)['reactions']
         self.assertEqual(dutch[0]['name'], 'Hartjes')
         self.assertEqual(self.call('language', 'en').returncode, 0)

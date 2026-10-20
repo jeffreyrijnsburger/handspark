@@ -104,6 +104,6 @@ MESSAGES = {
 
 
 def translate(language, key, **values):
-    catalog = MESSAGES.get(language, MESSAGES['nl'])
+    catalog = MESSAGES.get(language, MESSAGES['en'])
     message = catalog.get(key)
     return message.format(**values) if message is not None else key

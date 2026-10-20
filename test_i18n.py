@@ -21,12 +21,12 @@ class PreferenceTests(unittest.TestCase):
         self.patch.start()
         self.addCleanup(self.patch.stop)
 
-    def test_missing_and_invalid_preferences_keep_dutch_default(self):
-        self.assertEqual(settings.load_settings()['language'], 'nl')
+    def test_missing_and_invalid_preferences_use_english_default(self):
+        self.assertEqual(settings.load_settings()['language'], 'en')
         self.path.parent.mkdir()
         for value in ('not json', '[]', '{"language": "fr"}', '{"language": []}'):
             self.path.write_text(value)
-            self.assertEqual(settings.load_settings()['language'], 'nl')
+            self.assertEqual(settings.load_settings()['language'], 'en')
 
     def test_camera_settings_preserve_language_and_other_preferences(self):
         settings.update_settings(automatic=False, depth=True, language='en')
@@ -79,8 +79,8 @@ class TranslationTests(unittest.TestCase):
                 self.assertIn('reaction.' + reaction, MESSAGES[language])
                 self.assertIn('gesture.' + reaction, MESSAGES[language])
 
-    def test_unknown_language_falls_back_to_dutch(self):
-        self.assertEqual(translate('fr', 'camera_start'), 'Camera starten')
+    def test_unknown_language_falls_back_to_english(self):
+        self.assertEqual(translate('fr', 'camera_start'), 'Start camera')
         self.assertEqual(translate('en', 'external error {raw}'), 'external error {raw}')
 
 

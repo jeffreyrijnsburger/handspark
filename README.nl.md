@@ -13,17 +13,21 @@ Het is een knipoog naar Apples videoreacties op de Mac. De gebaren volgen
 dezelfde indeling, met eigen animaties en herkenning via MediaPipe. Er zit geen
 Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk project.
 
-**0.1.0 · MIT-licentie · Linux · Nederlands / Engels**
+**0.1.1 · MIT-licentie · Linux · Nederlands / Engels**
 
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
+
+![HandSpark met een gegenereerde demo-persoon en de echte lasereffecten](docs/handspark-demo.png)
+
+*De persoon is gegenereerd; de lasers komen uit de app. [Werkwijze](docs/DEMO.md).*
 
 ## Installeren
 
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.
 Modellen, effecten en Python-afhankelijkheden zitten erin. OBS 30.2 of nieuwer,
 Qt, FFmpeg en een werkende `v4l2loopback`-driver zijn systeemafhankelijkheden.
-Windows en macOS worden in 0.1.0 niet ondersteund.
+Windows en macOS worden in 0.1.1 niet ondersteund.
 
 Volg de installatieopdrachten in [README.md](README.md#install-the-release).
 Gebruik voor Ubuntu 24.04 OBS uit `noble-backports`. Open **HandSpark** uit het
@@ -57,7 +61,7 @@ lopende reactie. Sluiten van het venster laat de camera aan; **Camera stoppen**
 zet hem uit. De toepassing start niet automatisch bij aanmelden.
 
 Onderaan kies je **Nederlands** of **English**. De taal verandert direct en
-wordt onthouden. De standaard is Nederlands. Via de terminal kan het ook:
+wordt onthouden. De standaard voor nieuwe installaties is Engels; een bestaande Nederlandse keuze blijft behouden. Via de terminal kan het ook:
 
 ```sh
 handspark language nl

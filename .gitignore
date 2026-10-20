@@ -4,6 +4,7 @@ __pycache__/
 *.task
 *.tflite
 *.mov
+reactions-apple/
 *.download
 dist/
 .build/

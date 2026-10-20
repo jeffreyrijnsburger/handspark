@@ -23,8 +23,8 @@ and exit code 3.
 `handspark react lasers` starts the webcam if needed and triggers a reaction.
 Use camera-changing commands within the human's requested task. `cancel`
 stops an effect; `stop` stops the camera. Closing the panel leaves video on.
-Do not change an existing user's saved language unless asked. Dutch is the
-default; English is supported with `handspark language en`.
+Do not change an existing user's saved language unless asked. English is the
+default; Dutch is supported with `handspark language nl`.
 
 ## Development
 
@@ -32,7 +32,7 @@ Python 3.12; Ubuntu 24.04 amd64/X11 is the tested target. Windows and macOS
 camera backends are not implemented. Use a venv from `requirements.lock`.
 
 ```sh
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli -v
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel -v
 ```
 
@@ -45,3 +45,5 @@ Models must match manifest checksums; clips are built from source.
 Version changes update `VERSION` and `CHANGELOG.md`; release tags are `v0.x.y`.
 Use semantic commits: `feat(scope): subject`, `fix(scope): subject`, etc.
 Run relevant tests before publishing. See `docs/BUILDING.md` for release builds.
+Main is protected, including for admins. Use a feature branch and pull request,
+wait for the `test` check, and squash-merge. Do not bypass protection or force-push.

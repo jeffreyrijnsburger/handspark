@@ -6,8 +6,8 @@ from pathlib import Path
 import tempfile
 
 SETTINGS_PATH = Path.home() / '.config/teams-effects/settings.json'
-DEFAULTS = {'automatic': True, 'depth': True, 'language': 'nl'}
-LANGUAGES = {'nl': 'Nederlands', 'en': 'English'}
+DEFAULTS = {'automatic': True, 'depth': True, 'language': 'en'}
+LANGUAGES = {'en': 'English', 'nl': 'Nederlands'}
 
 
 def load_settings():

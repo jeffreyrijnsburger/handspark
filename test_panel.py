@@ -22,6 +22,7 @@ class PanelLanguageTests(unittest.TestCase):
         self.patch = patch.object(settings, 'SETTINGS_PATH', self.path)
         self.patch.start()
         self.addCleanup(self.patch.stop)
+        settings.update_settings(language='nl')
         self.widget = panel.Panel(autostart=False, poll=False)
         self.addCleanup(self.widget.close)
 
@@ -56,6 +57,14 @@ class PanelLanguageTests(unittest.TestCase):
         self.addCleanup(second.close)
         self.assertEqual(second.language, 'en')
         self.assertEqual(second.feedback.text(), 'Camera is off.')
+
+    def test_new_install_defaults_to_english_without_changing_existing_dutch_panel(self):
+        self.path.unlink()
+        fresh = panel.Panel(autostart=False, poll=False)
+        self.addCleanup(fresh.close)
+        self.assertEqual(fresh.language, 'en')
+        self.assertEqual(fresh.language_choice.currentText(), 'English')
+        self.assertEqual(self.widget.language, 'nl')
 
     def test_failed_save_keeps_previous_language_and_shows_error(self):
         with patch.object(panel, 'update_settings', side_effect=PermissionError('read-only')):

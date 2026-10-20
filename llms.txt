@@ -16,5 +16,5 @@ Run `handspark commands --json` to discover the local automation interface.
 Run `handspark status --json` for state without webcam images.
 Reaction IDs: heart, balloons, thumbs_up, thumbs_down, rain, confetti, fireworks, lasers.
 Supported platform: Ubuntu 24.04 amd64/X11; no Windows or macOS backend yet.
-Language defaults to Dutch; English is configurable. Preserve the user's choice.
+Language defaults to English; Dutch is configurable. Preserve the user's choice.
 No cloud inference, account, telemetry or API key is needed at runtime.
