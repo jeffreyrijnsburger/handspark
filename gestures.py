@@ -28,9 +28,10 @@ def _curled(points, pip, tip):
 def _thumb_direction(points):
     if not _valid(points):
         return None
-    if not all(_curled(points, pip, tip) for pip, tip in ((6, 8), (10, 12), (14, 16), (18, 20))):
-        return None
-    if not _finger_pattern(points, (False, False, False, False)):
+    # An oblique or loosely closed fist can put a folded fingertip slightly
+    # farther from the wrist than its middle joint. Keep the joint-angle
+    # check, but do not require every fingertip to fold toward the wrist.
+    if not _finger_pattern(points, (False, False, False, False), folded_ratio=1.15):
         return None
     # Palm length keeps the thresholds meaningful when the fist is side-on
     # and its knuckle span is shortened by perspective.
@@ -40,7 +41,10 @@ def _thumb_direction(points):
         return None
     dx = points[4][0] - points[2][0]
     dy = points[4][1] - points[2][1]
-    if abs(dy) <= 0.75 * scale or abs(dy) <= abs(dx) * 1.1:
+    extension = math.hypot(dx, dy)
+    # Measure extension along the thumb, so tilting the hand does not shorten
+    # an otherwise deliberate gesture. Its direction must still be upright.
+    if extension <= 0.65 * scale or abs(dy) <= abs(dx) * 1.1:
         return None
     # A deliberate thumb is straight at its interphalangeal joint and clearly
     # projects beyond the folded fingers, rather than just pointing upward.
@@ -53,7 +57,7 @@ def _thumb_direction(points):
         return None
     clearance = min((points[4][0] - point[0]) * dx
                     + (points[4][1] - point[1]) * dy for point in points[5:])
-    if clearance < 0.22 * scale * math.hypot(dx, dy):
+    if clearance < 0.10 * scale * extension:
         return None
     return 'up' if dy < 0 else 'down'
 
@@ -127,7 +131,7 @@ def classify(hands):
     return None
 
 
-def _finger_pattern(landmarks, pattern):
+def _finger_pattern(landmarks, pattern, *, folded_ratio=1.02):
     if not _valid(landmarks):
         return False
 
@@ -145,7 +149,7 @@ def _finger_pattern(landmarks, pattern):
         ratio = _distance(c, wrist) / max(_distance(b, wrist), scale * 0.1)
         if extended:
             return angle > 145 and ratio > 1.07
-        return angle < 155 and ratio < 1.02
+        return angle < 155 and ratio < folded_ratio
 
     return all(
         finger(mcp, pip, tip, extended)
