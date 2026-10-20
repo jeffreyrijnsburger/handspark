@@ -7,11 +7,13 @@ import tempfile
 
 SETTINGS_PATH = Path.home() / '.config/teams-effects/settings.json'
 DEFAULTS = {'automatic': True, 'depth': True, 'language': 'en',
-            'preview_resolution': 360, 'preview_fps': 30}
+            'preview_resolution': 360, 'preview_fps': 30, 'output_resolution': 360}
 LANGUAGES = {'en': 'English', 'nl': 'Nederlands'}
 PREVIEW_RESOLUTIONS = (360, 540, 720)
 PREVIEW_FPS = (15, 24, 30)
-PREVIEW_CHOICES = {'preview_resolution': PREVIEW_RESOLUTIONS, 'preview_fps': PREVIEW_FPS}
+OUTPUT_RESOLUTIONS = (360, 540, 720)
+SETTING_CHOICES = {'preview_resolution': PREVIEW_RESOLUTIONS, 'preview_fps': PREVIEW_FPS,
+                   'output_resolution': OUTPUT_RESOLUTIONS}
 
 
 def load_settings():
@@ -27,7 +29,7 @@ def load_settings():
             values[key] = DEFAULTS[key]
     if not isinstance(values['language'], str) or values['language'] not in LANGUAGES:
         values['language'] = DEFAULTS['language']
-    for key, choices in PREVIEW_CHOICES.items():
+    for key, choices in SETTING_CHOICES.items():
         if type(values[key]) is not int or values[key] not in choices:
             values[key] = DEFAULTS[key]
     return values
@@ -40,8 +42,8 @@ def update_settings(**updates):
         if key == 'language':
             if not isinstance(value, str) or value not in LANGUAGES:
                 raise ValueError('Supported languages: nl, en')
-        elif key in PREVIEW_CHOICES:
-            if type(value) is not int or value not in PREVIEW_CHOICES[key]:
+        elif key in SETTING_CHOICES:
+            if type(value) is not int or value not in SETTING_CHOICES[key]:
                 raise ValueError(f'Unsupported {key}: {value}')
         elif type(value) is not bool:
             raise ValueError(f'{key} must be a boolean')

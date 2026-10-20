@@ -35,5 +35,25 @@ class RainTests(unittest.TestCase):
             self.assertIsNone(renderer.frame(t).getchannel('A').getbbox())
 
 
+class ThumbVisualTests(unittest.TestCase):
+    def test_thumbs_have_shading_padding_and_different_silhouettes(self):
+        sprites = []
+        for key in ('thumbs_up', 'thumbs_down'):
+            renderer = Renderer(key)
+            sprite = np.asarray(renderer.bubble)
+            sprites.append(sprite)
+            alpha = sprite[:, :, 3]
+            self.assertFalse(alpha[:2].any())
+            self.assertFalse(alpha[:, :2].any())
+            self.assertFalse(alpha[:, -2:].any())
+            hand = sprite[45:170, 70:180]
+            bright = hand[:, :, 0] > 210
+            self.assertGreater(int(bright.sum()), 2000)
+            self.assertGreater(float(hand[:, :, 0][bright].std()), 2)
+            for t in (0, DURATION):
+                self.assertIsNone(renderer.frame(t).getchannel('A').getbbox())
+        self.assertFalse(np.array_equal(*sprites))
+
+
 if __name__ == '__main__':
     unittest.main()

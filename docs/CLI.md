@@ -9,6 +9,7 @@ No network API or authentication token is needed to control the local app.
 | `panel` (default) | Open/raise the native window and start the camera |
 | `setup` | Configure the current user's dedicated OBS profile and service |
 | `start` / `stop` | Start / stop the camera |
+| `restart` | Restart the camera and apply saved output resolution |
 | `status` | Show systemd status and recent logs |
 | `status --json` | Read current state, excluding any preview |
 | `list [--json]` | List the eight IDs, localized names and gestures |
@@ -18,6 +19,7 @@ No network API or authentication token is needed to control the local app.
 | `cancel` | Clear all effects, keeping video on |
 | `language [nl\|en] [--json]` | Read / save the UI language, even offline |
 | `preview [--resolution 360\|540\|720] [--fps 15\|24\|30] [--json]` | Read / save preview resolution and frame rate, even offline |
+| `output [--resolution 360\|540\|720] [--json]` | Read / save camera output size; applies on next start/restart, fixed 30 fps |
 | `commands --json` | Discover commands, languages and reaction IDs |
 
 JSON is one UTF-8 object per invocation. Every JSON response contains
@@ -32,18 +34,25 @@ No image, OBS password or user path is returned. A successful command exits 0.
 Preview configuration JSON includes `preview_resolution` (height in pixels) and
 `preview_fps`. Defaults are 360 and 30. These affect the panel's direct virtual
 camera reader and never restart or reconfigure the meeting camera.
+`output --json` returns saved `output_resolution`, fixed `output_fps: 30` and
+`applies_on_next_start: true`. Saving does not start or restart a camera; use
+`restart` explicitly when ready. Default output is 360p. Online status includes
+actual `output_resolution` and `output_fps` reported by OBS. The panel's output
+selector saves and restarts an already running camera automatically.
 Invalid syntax exits 2; general operational failures exit 1.
 An offline JSON status exits 3:
 
 ```json
-{"schema_version":1,"version":"0.2.1","ok":false,"error_code":"camera_offline"}
+{"schema_version":1,"version":"0.3.0","ok":false,"error_code":"camera_offline"}
 ```
 
-`status`, `list`, `commands`, `--version` and reading `language` do not start a
+`status`, `list`, `commands`, `--version` and reading `language`, `preview` or
+`output` do not start a
 camera or change settings. Reactions are accepted through a private local queue;
 successful acceptance does not mean an effect has already finished. Poll status
 to follow its lifetime. Pausing gestures and changing language do not interrupt
-the video stream. Only `stop` shuts down the camera output.
+the video stream. `stop` shuts down the camera output; `restart` interrupts it
+briefly while applying saved output settings.
 
 The runtime socket lives at `$XDG_RUNTIME_DIR/teams-effects/control.sock`, mode
 0600 inside a 0700 directory. Prefer the CLI over depending on the private IPC

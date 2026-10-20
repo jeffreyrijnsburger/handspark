@@ -4,7 +4,7 @@ import shutil
 from unittest.mock import patch
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from live_preview import JpegFrames, LivePreview, ffmpeg_arguments
+from live_preview import JpegFrames, LivePreview, preview_command
 
 
 class PreviewTests(unittest.TestCase):
@@ -37,14 +37,14 @@ class PreviewTests(unittest.TestCase):
         self.assertFalse(decoder.buffer)
         self.assertEqual(decoder.feed(self.jpeg('green')), self.jpeg('green'))
 
-    def test_scaling_and_fps_apply_to_pipe_not_capture_device(self):
-        arguments = ffmpeg_arguments('/dev/video42', 540, 24)
-        self.assertIn('scale=960:540:flags=fast_bilinear,fps=24', arguments)
-        self.assertNotIn('-framerate', arguments)
-        self.assertNotIn('-video_size', arguments)
-        self.assertEqual(arguments[-1], 'pipe:1')
+    def test_preview_process_uses_bundled_runtime_without_a_camera_device(self):
+        program, arguments = preview_command(540, 24)
+        self.assertTrue(program.endswith('/.venv/bin/python'))
+        self.assertTrue(arguments[0].endswith('/preview_stream.py'))
+        self.assertEqual(arguments[1:], ['--resolution', '540', '--fps', '24'])
+        self.assertFalse(any('/dev/video' in arg for arg in arguments))
         with self.assertRaises(ValueError):
-            ffmpeg_arguments('/dev/video42', 1080, 30)
+            preview_command(1080, 30)
 
     def test_reconfiguration_and_stop_do_not_leave_a_reader_running(self):
         reader = LivePreview()
@@ -80,7 +80,7 @@ class PreviewTests(unittest.TestCase):
                      '-i', 'testsrc=size=160x90:rate=30', '-t', '2',
                      '-c:v', 'mjpeg', '-threads', '1', '-f', 'image2pipe', 'pipe:1']
         try:
-            with patch('live_preview.ffmpeg_arguments', return_value=arguments):
+            with patch('live_preview.preview_command', return_value=('ffmpeg', arguments)):
                 reader.start()
                 timer.start(5000)
                 loop.exec_()

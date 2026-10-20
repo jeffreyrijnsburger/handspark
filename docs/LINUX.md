@@ -54,11 +54,18 @@ module itself.
 
 ## OBS configuration
 
-The panel reads the composited virtual camera through FFmpeg, in memory.
-It finds the device by its `Teams Effects` or `OBS Virtual Camera` card label,
-falling back to `/dev/video42`. With multiple virtual cameras, set
-`HANDSPARK_PREVIEW_DEVICE=/dev/videoN` in the panel's environment to choose one.
-The preview reader closes when its window closes; the backend continues running.
+The panel reads the composed OBS scene through a dedicated JPEG stream, in
+memory. It does not open the virtual-camera device, leaving the loopback
+capture stream available for Teams, Zoom or another camera consumer. This also
+works with drivers that permit only one capture stream. Preview resolution and
+FPS remain independent of camera output; frames never exceed the configured
+output resolution. The preview worker stops when its window closes; the
+backend continues running.
+
+Camera output defaults to 360p / 30 fps, with 540p and 720p available in the
+panel. Output changes are applied to the stopped OBS profile before restarting
+it, retaining the 720p scene coordinates for effects and masks. If you launched
+OBS separately, close it before changing camera output.
 
 First start creates the `Teams Effects` profile and collection under
 `~/.config/obs-studio/` and enables authenticated OBS WebSocket on port 4467.
@@ -70,7 +77,7 @@ Credentials live in `~/.config/teams-effects/obs-password` and
 `~/.config/obs-studio/plugin_config/obs-websocket/config.json`, with private
 permissions. They must not be committed to Git.
 The application mutes OBS's special audio inputs in its dedicated profile;
-Teams continues using its own microphone selection.
+Your video app continues using its own microphone selection.
 
 The service starts only on demand. Closing the panel leaves video running;
 `handspark stop` stops it. Native PyQt5 supplies the window, including your

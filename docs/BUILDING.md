@@ -30,7 +30,7 @@ Generated models, clips, venvs and user data are excluded from Git.
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions -v
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
 ```
 
@@ -43,7 +43,7 @@ Hardware validation also needs a physical webcam, loopback device and OBS.
 
 ```sh
 python3 tools/build_deb.py
-dpkg-deb --info dist/handspark_0.2.1_ubuntu24.04_amd64.deb
+dpkg-deb --info dist/handspark_0.3.0_ubuntu24.04_amd64.deb
 (cd dist && sha256sum -c SHA256SUMS)
 ```
 

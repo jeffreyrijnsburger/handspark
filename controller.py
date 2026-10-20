@@ -193,7 +193,9 @@ def recognize(obs, overlays, stopping):
             gate.suppress(now, reaction)
 
     with mp.tasks.vision.HandLandmarker.create_from_options(options) as landmarker:
-        control.update(**settings)
+        video = obs.call('GetVideoSettings')
+        control.update(**settings, output_resolution=video['outputHeight'],
+                       output_fps=video['fpsNumerator'] / video['fpsDenominator'])
         control.start()
         LOG.info('Klaar: acht gebaren, diepte-effecten en lokale camerabediening')
         address = os.environ.get('NOTIFY_SOCKET')
@@ -297,6 +299,8 @@ def run():
     obs = None
     child = None
     try:
+        from bootstrap import configure_video
+        configure_video()
         try:
             obs = Obs()
         except (OSError, websocket.WebSocketException):

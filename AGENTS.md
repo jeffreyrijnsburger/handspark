@@ -16,7 +16,10 @@ handspark status --json
 
 The CLI is the supported automation interface. JSON responses contain
 `schema_version: 1` and `version`; reaction IDs are language-independent.
-Read commands do not start a camera. `status --json` never returns an image.
+Read commands do not start a camera.
+`output --resolution 360` saves camera output size without restarting; apply with
+`restart` when authorized. The panel output selector restarts immediately.
+Default output is 360p / 30 fps; preview settings are independent. `status --json` never returns an image.
 An offline camera returns JSON with `ok: false`, `error_code: camera_offline`
 and exit code 3.
 
@@ -32,7 +35,7 @@ Python 3.12; Ubuntu 24.04 amd64/X11 is the tested target. Windows and macOS
 camera backends are not implemented. Use a venv from `requirements.lock`.
 
 ```sh
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions -v
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
 ```
 

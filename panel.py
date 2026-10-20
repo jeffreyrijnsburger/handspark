@@ -12,7 +12,7 @@ from control import request
 from i18n import translate
 from live_preview import LivePreview
 from reactions import REACTIONS
-from settings import LANGUAGES, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
+from settings import LANGUAGES, OUTPUT_RESOLUTIONS, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
 
 
 def launcher_path():
@@ -46,6 +46,7 @@ class Panel(QtWidgets.QWidget):
         preferences = load_settings()
         self.language = preferences['language']
         self.preview_options = (preferences['preview_resolution'], preferences['preview_fps'])
+        self.output_resolution = preferences['output_resolution']
         self.live_preview = poll
         self.preview_error = False
         self.setWindowIcon(QtGui.QIcon(str(Path(__file__).parent / 'icons/handspark.svg')))
@@ -82,6 +83,18 @@ class Panel(QtWidgets.QWidget):
         outer.addWidget(self.guide)
         self.preview = Preview(self.language)
         outer.addWidget(self.preview, 1)
+        output_row = QtWidgets.QHBoxLayout()
+        self.output_label = QtWidgets.QLabel()
+        self.output_choice = QtWidgets.QComboBox()
+        for height in OUTPUT_RESOLUTIONS:
+            self.output_choice.addItem(f'{height}p ({height * 16 // 9}×{height}) · 30 fps', height)
+        self.output_choice.setCurrentIndex(self.output_choice.findData(self.output_resolution))
+        self.output_choice.currentIndexChanged.connect(self.change_output)
+        self.output_label.setBuddy(self.output_choice)
+        output_row.addWidget(self.output_label)
+        output_row.addWidget(self.output_choice)
+        output_row.addStretch()
+        outer.addLayout(output_row)
         self.reader = LivePreview(self)
         self.reader.frame.connect(self.preview_frame)
         self.reader.unavailable.connect(self.preview_failed)
@@ -193,6 +206,9 @@ class Panel(QtWidgets.QWidget):
         self.language_choice.setAccessibleName(self.text('language'))
         self.language_choice.setToolTip(self.text('language_help'))
         self.preview_label.setText(self.text('preview_settings'))
+        self.output_label.setText(self.text('output_settings'))
+        self.output_choice.setAccessibleName(self.text('output_settings'))
+        self.output_choice.setToolTip(self.text('output_settings_help'))
         self.resolution_choice.setAccessibleName(self.text('preview_resolution'))
         self.fps_choice.setAccessibleName(self.text('preview_fps'))
         self.resolution_choice.setToolTip(self.text('preview_settings_help'))
@@ -230,6 +246,30 @@ class Panel(QtWidgets.QWidget):
             control.setCurrentIndex(control.findData(value))
             del blocker
         self.reader.configure(resolution, fps)
+
+    def change_output(self, _index):
+        resolution = self.output_choice.currentData()
+        if resolution == self.output_resolution or resolution is None:
+            return
+        try:
+            update_settings(output_resolution=resolution)
+        except OSError:
+            self.action_error = 'output_save_failed'
+            self.error_until = time.monotonic() + 5
+            blocker = QtCore.QSignalBlocker(self.output_choice)
+            self.output_choice.setCurrentIndex(self.output_choice.findData(self.output_resolution))
+            del blocker
+        else:
+            self.output_resolution = resolution
+            if self.action_error == 'output_save_failed':
+                self.action_error = None
+            if self.online:
+                self.starting = True
+                self.output_choice.setEnabled(False)
+                self.camera.setEnabled(False)
+                self.reader.stop()
+                self.process.start(sys.executable, [str(launcher_path()), 'restart'])
+        self.render_feedback()
 
     def change_preview(self, _index):
         resolution, fps = self.resolution_choice.currentData(), self.fps_choice.currentData()
@@ -281,6 +321,7 @@ class Panel(QtWidgets.QWidget):
         self.starting = True
         self.action_error = None
         self.camera.setEnabled(False)
+        self.output_choice.setEnabled(False)
         self.render_feedback()
         self.process.start(sys.executable, [str(launcher_path()), 'start'])
 
@@ -288,6 +329,7 @@ class Panel(QtWidgets.QWidget):
         if self.online:
             self.starting = False
             self.camera.setEnabled(False)
+            self.output_choice.setEnabled(False)
             self.process.start(sys.executable, [str(launcher_path()), 'stop'])
         else:
             self.start_camera()
@@ -295,6 +337,7 @@ class Panel(QtWidgets.QWidget):
     def process_finished(self, exit_code, exit_status):
         self.starting = False
         self.camera.setEnabled(True)
+        self.output_choice.setEnabled(True)
         if exit_code:
             self.action_error = 'camera_failed'
             self.error_until = time.monotonic() + 3600
@@ -317,6 +360,11 @@ class Panel(QtWidgets.QWidget):
         options = (preferences['preview_resolution'], preferences['preview_fps'])
         if options != self.preview_options:
             self.apply_preview_options(*options)
+        if preferences['output_resolution'] != self.output_resolution:
+            self.output_resolution = preferences['output_resolution']
+            blocker = QtCore.QSignalBlocker(self.output_choice)
+            self.output_choice.setCurrentIndex(self.output_choice.findData(self.output_resolution))
+            del blocker
         for action in self.actions[:]:
             if action.done():
                 self.actions.remove(action)
@@ -351,11 +399,11 @@ class Panel(QtWidgets.QWidget):
 
     def apply_status(self, state):
         self.online = True
-        if self.live_preview:
+        if self.live_preview and not self.starting:
             self.reader.start()
         self.last_state = state
         self.camera.setText(self.text('camera_stop'))
-        self.camera.setEnabled(True)
+        self.camera.setEnabled(not self.starting and self.process.state() == QtCore.QProcess.NotRunning)
         for control in (*self.buttons.values(), self.automatic, self.depth):
             control.setEnabled(True)
         for key, control in (('automatic', self.automatic), ('depth', self.depth)):
@@ -389,6 +437,8 @@ class Panel(QtWidgets.QWidget):
         candidate = state.get('candidate')
         if self.action_error and time.monotonic() < self.error_until:
             text = self.text(self.action_error)
+        elif self.starting:
+            text = self.text('starting')
         elif not self.online:
             text = self.text('starting' if self.starting else 'off')
         elif state.get('error'):

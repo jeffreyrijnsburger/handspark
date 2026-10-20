@@ -26,33 +26,37 @@ def main():
     language = load_settings()['language']
     parser = argparse.ArgumentParser(description='HandSpark: local gesture reactions for your Linux webcam.')
     parser.add_argument('--version', action='version', version='HandSpark ' + VERSION)
-    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language, preview and commands')
-    parser.add_argument('--resolution', type=int, choices=PREVIEW_RESOLUTIONS, help='Preview height in pixels')
+    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language, preview, output and commands')
+    parser.add_argument('--resolution', type=int, choices=PREVIEW_RESOLUTIONS, help='Preview or camera output height in pixels')
     parser.add_argument('--fps', type=int, choices=PREVIEW_FPS, help='Preview frames per second')
     parser.add_argument('command', nargs='?', default='panel', choices=(
-        'panel', 'setup', 'start', 'stop', 'status', 'list', 'language', 'preview',
+        'panel', 'setup', 'start', 'stop', 'restart', 'status', 'list', 'language', 'preview', 'output',
         'pause', 'resume', 'cancel', 'react', 'commands', *REACTIONS))
     parser.add_argument('argument', nargs='?')
     args = parser.parse_args()
     action = args.command
     if args.argument is not None and action not in ('language', 'react'):
         parser.error('This command does not take an argument')
-    if args.json and action not in ('status', 'list', 'language', 'preview', 'commands'):
-        parser.error('--json is supported by status, list, language, preview and commands')
-    if (args.resolution is not None or args.fps is not None) and action != 'preview':
-        parser.error('--resolution and --fps are supported by preview')
+    if args.json and action not in ('status', 'list', 'language', 'preview', 'output', 'commands'):
+        parser.error('--json is supported by status, list, language, preview, output and commands')
+    if args.resolution is not None and action not in ('preview', 'output'):
+        parser.error('--resolution is supported by preview and output')
+    if args.fps is not None and action != 'preview':
+        parser.error('--fps is supported by preview; camera output stays at 30 fps')
     if action == 'commands':
         emit({'ok': True, 'commands': {
             'status --json': 'Read camera status; never includes a preview',
             'list --json': 'List reaction identifiers and gestures',
             'start': 'Start the webcam and gesture recognition',
             'stop': 'Stop the webcam',
+            'restart': 'Restart the webcam to apply saved output resolution',
             'react <id>': 'Play one reaction; starts the camera if needed',
             'cancel': 'Stop the current effect while keeping the camera on',
             'pause': 'Pause gestures while keeping the camera on',
             'resume': 'Resume gesture recognition',
             'language [nl|en]': 'Read or change the saved UI language',
             'preview [--resolution 360|540|720] [--fps 15|24|30]': 'Read or change preview quality without starting the camera',
+            'output [--resolution 360|540|720]': 'Read or save camera output resolution; applies on next start/restart, fixed 30 fps',
             'panel': 'Show the native control window',
             'setup': 'Configure this user’s OBS profile and service'},
             'languages': list(LANGUAGES), 'reactions': list(REACTIONS)})
@@ -89,6 +93,16 @@ def main():
         else:
             print(f'{preview["preview_resolution"]}p / {preview["preview_fps"]} fps')
         return 0
+    if action == 'output':
+        values = (update_settings(output_resolution=args.resolution)
+                  if args.resolution is not None else load_settings())
+        output = {'output_resolution': values['output_resolution'], 'output_fps': 30,
+                  'applies_on_next_start': True}
+        if args.json:
+            emit({'ok': True, **output})
+        else:
+            print(f'{output["output_resolution"]}p / 30 fps; applies on next camera start/restart')
+        return 0
     if action == 'status':
         if args.json:
             from control import request
@@ -120,7 +134,7 @@ def main():
                             'XDG_CURRENT_DESKTOP') if key in os.environ]
     if keys:
         subprocess.run(['systemctl', '--user', 'import-environment', *keys], check=True)
-    subprocess.run(['systemctl', '--user', 'start', UNIT], check=True)
+    subprocess.run(['systemctl', '--user', 'restart' if action == 'restart' else 'start', UNIT], check=True)
     if action in REACTIONS:
         from control import request
         request('react', reaction=action)
