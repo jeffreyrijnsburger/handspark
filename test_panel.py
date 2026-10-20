@@ -88,6 +88,27 @@ class PanelLanguageTests(unittest.TestCase):
             self.widget.apply_status({'automatic': True, 'depth': True, **extra})
             self.assertTrue(self.widget.feedback.text().startswith(expected))
 
+    def test_preview_options_save_offline_and_keep_language_and_camera_state(self):
+        self.widget.resolution_choice.setCurrentIndex(self.widget.resolution_choice.findData(540))
+        self.widget.fps_choice.setCurrentIndex(self.widget.fps_choice.findData(24))
+        values = settings.load_settings()
+        self.assertEqual((values['preview_resolution'], values['preview_fps']), (540, 24))
+        self.assertEqual(values['language'], 'nl')
+        self.assertFalse(self.widget.online)
+        self.assertEqual(self.widget.reader.process.state(), QtCore.QProcess.NotRunning)
+
+    def test_failed_preview_save_restores_previous_choices(self):
+        with patch.object(panel, 'update_settings', side_effect=PermissionError('read-only')):
+            self.widget.fps_choice.setCurrentIndex(self.widget.fps_choice.findData(15))
+        self.assertEqual(self.widget.fps_choice.currentData(), 30)
+        self.assertIn('niet worden opgeslagen', self.widget.feedback.text())
+
+    def test_status_poll_never_requests_screenshot_previews(self):
+        with patch.object(panel, 'request', return_value={'automatic': True, 'depth': True}) as request:
+            self.widget.poll()
+            self.widget.pending.result(timeout=2)
+            request.assert_called_once_with('status')
+
     def test_language_and_stop_controls_fit_wide_and_narrow_layouts(self):
         self.widget.show()
         for code in ('nl', 'en'):
@@ -96,7 +117,8 @@ class PanelLanguageTests(unittest.TestCase):
                 self.widget.resize(width, height)
                 self.app.processEvents()
                 self.assertEqual(self.widget.width(), width)
-                for control in (self.widget.language_choice, self.widget.camera, self.widget.cancel,
+                for control in (self.widget.language_choice, self.widget.resolution_choice, self.widget.fps_choice,
+                                self.widget.camera, self.widget.cancel,
                                 *self.widget.buttons.values()):
                     position = control.mapTo(self.widget, QtCore.QPoint())
                     self.assertGreaterEqual(position.x(), 0)

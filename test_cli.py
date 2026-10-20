@@ -50,6 +50,19 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.call('language', 'fr').returncode, 2)
         self.assertEqual(json.loads(self.call('language', '--json').stdout)['language'], 'en')
 
+    def test_preview_configuration_is_available_offline(self):
+        default = json.loads(self.call('preview', '--json').stdout)
+        self.assertEqual((default['preview_resolution'], default['preview_fps']), (360, 30))
+        self.assertFalse((Path(self.folder.name) / '.config').exists())
+        self.call('language', 'nl')
+        result = self.call('preview', '--resolution', '720', '--fps', '24', '--json')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        values = json.loads(result.stdout)
+        self.assertEqual((values['preview_resolution'], values['preview_fps']), (720, 24))
+        self.assertEqual(json.loads(self.call('language', '--json').stdout)['language'], 'nl')
+        self.assertEqual(self.call('preview', '--fps', '60').returncode, 2)
+        self.assertEqual(self.call('start', '--fps', '30').returncode, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

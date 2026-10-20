@@ -12,7 +12,7 @@ BASE = candidate if (candidate / 'controller.py').exists() else Path.home() / '.
 sys.path.insert(0, str(BASE))
 from i18n import translate
 from reactions import REACTIONS
-from settings import LANGUAGES, load_settings, update_settings
+from settings import LANGUAGES, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
 
 VERSION = (BASE / 'VERSION').read_text().strip()
 UNIT = 'teams-effects.service'
@@ -26,17 +26,21 @@ def main():
     language = load_settings()['language']
     parser = argparse.ArgumentParser(description='HandSpark: local gesture reactions for your Linux webcam.')
     parser.add_argument('--version', action='version', version='HandSpark ' + VERSION)
-    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language and commands')
+    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language, preview and commands')
+    parser.add_argument('--resolution', type=int, choices=PREVIEW_RESOLUTIONS, help='Preview height in pixels')
+    parser.add_argument('--fps', type=int, choices=PREVIEW_FPS, help='Preview frames per second')
     parser.add_argument('command', nargs='?', default='panel', choices=(
-        'panel', 'setup', 'start', 'stop', 'status', 'list', 'language',
+        'panel', 'setup', 'start', 'stop', 'status', 'list', 'language', 'preview',
         'pause', 'resume', 'cancel', 'react', 'commands', *REACTIONS))
     parser.add_argument('argument', nargs='?')
     args = parser.parse_args()
     action = args.command
     if args.argument is not None and action not in ('language', 'react'):
         parser.error('This command does not take an argument')
-    if args.json and action not in ('status', 'list', 'language', 'commands'):
-        parser.error('--json is supported by status, list, language and commands')
+    if args.json and action not in ('status', 'list', 'language', 'preview', 'commands'):
+        parser.error('--json is supported by status, list, language, preview and commands')
+    if (args.resolution is not None or args.fps is not None) and action != 'preview':
+        parser.error('--resolution and --fps are supported by preview')
     if action == 'commands':
         emit({'ok': True, 'commands': {
             'status --json': 'Read camera status; never includes a preview',
@@ -48,6 +52,7 @@ def main():
             'pause': 'Pause gestures while keeping the camera on',
             'resume': 'Resume gesture recognition',
             'language [nl|en]': 'Read or change the saved UI language',
+            'preview [--resolution 360|540|720] [--fps 15|24|30]': 'Read or change preview quality without starting the camera',
             'panel': 'Show the native control window',
             'setup': 'Configure this user’s OBS profile and service'},
             'languages': list(LANGUAGES), 'reactions': list(REACTIONS)})
@@ -70,6 +75,19 @@ def main():
             emit({'ok': True, 'language': language, 'name': LANGUAGES[language]})
         else:
             print(f'{language}: {LANGUAGES[language]}')
+        return 0
+    if action == 'preview':
+        updates = {}
+        if args.resolution is not None:
+            updates['preview_resolution'] = args.resolution
+        if args.fps is not None:
+            updates['preview_fps'] = args.fps
+        values = update_settings(**updates) if updates else load_settings()
+        preview = {key: values[key] for key in ('preview_resolution', 'preview_fps')}
+        if args.json:
+            emit({'ok': True, **preview})
+        else:
+            print(f'{preview["preview_resolution"]}p / {preview["preview_fps"]} fps')
         return 0
     if action == 'status':
         if args.json:

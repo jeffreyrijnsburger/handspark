@@ -10,8 +10,9 @@ from PyQt5 import QtCore, QtGui, QtNetwork, QtWidgets
 
 from control import request
 from i18n import translate
+from live_preview import LivePreview
 from reactions import REACTIONS
-from settings import LANGUAGES, load_settings, update_settings
+from settings import LANGUAGES, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
 
 
 def launcher_path():
@@ -42,7 +43,11 @@ class Preview(QtWidgets.QWidget):
 class Panel(QtWidgets.QWidget):
     def __init__(self, autostart=True, poll=True):
         super().__init__()
-        self.language = load_settings()['language']
+        preferences = load_settings()
+        self.language = preferences['language']
+        self.preview_options = (preferences['preview_resolution'], preferences['preview_fps'])
+        self.live_preview = poll
+        self.preview_error = False
         self.setWindowIcon(QtGui.QIcon(str(Path(__file__).parent / 'icons/handspark.svg')))
         self.resize(760, 780)
         self.setMinimumSize(480, 700)
@@ -77,6 +82,25 @@ class Panel(QtWidgets.QWidget):
         outer.addWidget(self.guide)
         self.preview = Preview(self.language)
         outer.addWidget(self.preview, 1)
+        self.reader = LivePreview(self)
+        self.reader.frame.connect(self.preview_frame)
+        self.reader.unavailable.connect(self.preview_failed)
+        preview_row = QtWidgets.QHBoxLayout()
+        self.preview_label = QtWidgets.QLabel()
+        self.resolution_choice = QtWidgets.QComboBox()
+        self.fps_choice = QtWidgets.QComboBox()
+        for height in PREVIEW_RESOLUTIONS:
+            self.resolution_choice.addItem(f'{height}p ({height * 16 // 9}×{height})', height)
+        for fps in PREVIEW_FPS:
+            self.fps_choice.addItem(f'{fps} fps', fps)
+        self.resolution_choice.currentIndexChanged.connect(self.change_preview)
+        self.fps_choice.currentIndexChanged.connect(self.change_preview)
+        self.preview_label.setBuddy(self.resolution_choice)
+        preview_row.addWidget(self.preview_label)
+        preview_row.addWidget(self.resolution_choice)
+        preview_row.addWidget(self.fps_choice)
+        preview_row.addStretch()
+        outer.addLayout(preview_row)
         switches = QtWidgets.QHBoxLayout()
         self.automatic = QtWidgets.QCheckBox()
         self.automatic.toggled.connect(lambda enabled: self.command('automatic', enabled=enabled))
@@ -143,6 +167,7 @@ class Panel(QtWidgets.QWidget):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.poll)
         self.retranslate()
+        self.apply_preview_options(*self.preview_options)
         self.apply_offline()
         if poll:
             self.timer.start(400)
@@ -167,6 +192,11 @@ class Panel(QtWidgets.QWidget):
         self.language_label.setText(self.text('language'))
         self.language_choice.setAccessibleName(self.text('language'))
         self.language_choice.setToolTip(self.text('language_help'))
+        self.preview_label.setText(self.text('preview_settings'))
+        self.resolution_choice.setAccessibleName(self.text('preview_resolution'))
+        self.fps_choice.setAccessibleName(self.text('preview_fps'))
+        self.resolution_choice.setToolTip(self.text('preview_settings_help'))
+        self.fps_choice.setToolTip(self.text('preview_settings_help'))
         blocker = QtCore.QSignalBlocker(self.language_choice)
         self.language_choice.setCurrentIndex(self.language_choice.findData(self.language))
         del blocker
@@ -192,6 +222,44 @@ class Panel(QtWidgets.QWidget):
             if self.action_error == 'language_save_failed':
                 self.action_error = None
         self.retranslate()
+
+    def apply_preview_options(self, resolution, fps):
+        self.preview_options = (resolution, fps)
+        for control, value in ((self.resolution_choice, resolution), (self.fps_choice, fps)):
+            blocker = QtCore.QSignalBlocker(control)
+            control.setCurrentIndex(control.findData(value))
+            del blocker
+        self.reader.configure(resolution, fps)
+
+    def change_preview(self, _index):
+        resolution, fps = self.resolution_choice.currentData(), self.fps_choice.currentData()
+        if resolution is None or fps is None:
+            return
+        try:
+            update_settings(preview_resolution=resolution, preview_fps=fps)
+        except OSError:
+            self.action_error = 'preview_save_failed'
+            self.error_until = time.monotonic() + 5
+            self.apply_preview_options(*self.preview_options)
+        else:
+            self.apply_preview_options(resolution, fps)
+            if self.action_error == 'preview_save_failed':
+                self.action_error = None
+        self.render_feedback()
+
+    def preview_frame(self, data):
+        image = QtGui.QPixmap()
+        if not image.loadFromData(data, 'JPEG'):
+            return
+        self.preview.image = image
+        self.preview.update()
+        if self.preview_error:
+            self.preview_error = False
+            self.render_feedback()
+
+    def preview_failed(self):
+        self.preview_error = True
+        self.render_feedback()
 
     def reflow(self):
         columns = 2 if self.width() < 680 else 4
@@ -241,10 +309,14 @@ class Panel(QtWidgets.QWidget):
         self.actions.append(self.executor.submit(request, command, **values))
 
     def poll(self):
-        language = load_settings()['language']
+        preferences = load_settings()
+        language = preferences['language']
         if language != self.language:
             self.language = language
             self.retranslate()
+        options = (preferences['preview_resolution'], preferences['preview_fps'])
+        if options != self.preview_options:
+            self.apply_preview_options(*options)
         for action in self.actions[:]:
             if action.done():
                 self.actions.remove(action)
@@ -261,10 +333,12 @@ class Panel(QtWidgets.QWidget):
             except (OSError, ValueError, RuntimeError):
                 self.apply_offline()
             self.pending = None
-        self.pending = self.executor.submit(request, 'status', preview=True)
+        self.pending = self.executor.submit(request, 'status')
 
     def apply_offline(self):
         self.online = False
+        self.reader.stop()
+        self.preview_error = False
         self.last_state = {}
         self.camera.setText(self.text('camera_start'))
         self.camera.setEnabled(not self.starting)
@@ -277,6 +351,8 @@ class Panel(QtWidgets.QWidget):
 
     def apply_status(self, state):
         self.online = True
+        if self.live_preview:
+            self.reader.start()
         self.last_state = state
         self.camera.setText(self.text('camera_stop'))
         self.camera.setEnabled(True)
@@ -317,6 +393,8 @@ class Panel(QtWidgets.QWidget):
             text = self.text('starting' if self.starting else 'off')
         elif state.get('error'):
             text = self.text(state.get('error_code') or state['error'])
+        elif self.preview_error:
+            text = self.text('preview_unavailable')
         elif reaction:
             text = self.text('reaction.' + reaction)
         elif not state.get('automatic', True):
@@ -333,6 +411,7 @@ class Panel(QtWidgets.QWidget):
 
     def closeEvent(self, event):
         self.timer.stop()
+        self.reader.close()
         self.executor.shutdown(wait=False, cancel_futures=True)
         event.accept()
 

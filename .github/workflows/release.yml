@@ -23,7 +23,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y python3-pyqt5 ffmpeg libgl1 libportaudio2
       - run: python -m venv .venv && .venv/bin/python -m pip install -r requirements.lock
       - run: .venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers -v
-      - run: QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel -v
+      - run: QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
       - run: python tools/build_deb.py
       - run: (cd dist && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

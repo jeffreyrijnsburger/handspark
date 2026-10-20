@@ -6,8 +6,12 @@ from pathlib import Path
 import tempfile
 
 SETTINGS_PATH = Path.home() / '.config/teams-effects/settings.json'
-DEFAULTS = {'automatic': True, 'depth': True, 'language': 'en'}
+DEFAULTS = {'automatic': True, 'depth': True, 'language': 'en',
+            'preview_resolution': 360, 'preview_fps': 30}
 LANGUAGES = {'en': 'English', 'nl': 'Nederlands'}
+PREVIEW_RESOLUTIONS = (360, 540, 720)
+PREVIEW_FPS = (15, 24, 30)
+PREVIEW_CHOICES = {'preview_resolution': PREVIEW_RESOLUTIONS, 'preview_fps': PREVIEW_FPS}
 
 
 def load_settings():
@@ -23,6 +27,9 @@ def load_settings():
             values[key] = DEFAULTS[key]
     if not isinstance(values['language'], str) or values['language'] not in LANGUAGES:
         values['language'] = DEFAULTS['language']
+    for key, choices in PREVIEW_CHOICES.items():
+        if type(values[key]) is not int or values[key] not in choices:
+            values[key] = DEFAULTS[key]
     return values
 
 
@@ -33,6 +40,9 @@ def update_settings(**updates):
         if key == 'language':
             if not isinstance(value, str) or value not in LANGUAGES:
                 raise ValueError('Supported languages: nl, en')
+        elif key in PREVIEW_CHOICES:
+            if type(value) is not int or value not in PREVIEW_CHOICES[key]:
+                raise ValueError(f'Unsupported {key}: {value}')
         elif type(value) is not bool:
             raise ValueError(f'{key} must be a boolean')
     SETTINGS_PATH.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

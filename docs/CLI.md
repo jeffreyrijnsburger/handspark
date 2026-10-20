@@ -17,6 +17,7 @@ No network API or authentication token is needed to control the local app.
 | `pause` / `resume` | Disable / enable automatic gestures, keeping video on |
 | `cancel` | Clear all effects, keeping video on |
 | `language [nl\|en] [--json]` | Read / save the UI language, even offline |
+| `preview [--resolution 360\|540\|720] [--fps 15\|24\|30] [--json]` | Read / save preview resolution and frame rate, even offline |
 | `commands --json` | Discover commands, languages and reaction IDs |
 
 JSON is one UTF-8 object per invocation. Every JSON response contains
@@ -28,11 +29,14 @@ An online status includes `automatic`, `depth`, `reaction` (ID or null),
 `candidate`, `progress` (0–1), `hands`, `cooldown` (seconds), `needs_release`,
 `remaining` (seconds), `mask_frames`, `error` and `error_code`.
 No image, OBS password or user path is returned. A successful command exits 0.
+Preview configuration JSON includes `preview_resolution` (height in pixels) and
+`preview_fps`. Defaults are 360 and 30. These affect the panel's direct virtual
+camera reader and never restart or reconfigure the meeting camera.
 Invalid syntax exits 2; general operational failures exit 1.
 An offline JSON status exits 3:
 
 ```json
-{"schema_version":1,"version":"0.1.1","ok":false,"error_code":"camera_offline"}
+{"schema_version":1,"version":"0.2.0","ok":false,"error_code":"camera_offline"}
 ```
 
 `status`, `list`, `commands`, `--version` and reading `language` do not start a
