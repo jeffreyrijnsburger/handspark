@@ -1,0 +1,32 @@
+[Desktop Entry]
+Type=Application
+Name=HandSpark
+Comment=Hand gesture reactions for your webcam
+Comment[nl]=Handgebaren en reacties voor je webcam
+Exec=handspark panel
+Icon=handspark
+Terminal=false
+Categories=AudioVideo;Video;
+Keywords=webcam;camera;gestures;reactions;Teams;OBS;
+StartupWMClass=HandSpark
+Actions=Pause;Resume;Cancel;Stop;
+
+[Desktop Action Pause]
+Name=Pause gestures
+Name[nl]=Handgebaren pauzeren
+Exec=handspark pause
+
+[Desktop Action Resume]
+Name=Resume gestures
+Name[nl]=Handgebaren hervatten
+Exec=handspark resume
+
+[Desktop Action Cancel]
+Name=Stop effect
+Name[nl]=Effect stoppen
+Exec=handspark cancel
+
+[Desktop Action Stop]
+Name=Stop camera
+Name[nl]=Camera stoppen
+Exec=handspark stop

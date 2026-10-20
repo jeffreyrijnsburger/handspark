@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+"""HandSpark's local CLI. Machine-readable output uses schema version 1."""
+import argparse
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+candidate = Path(__file__).resolve().parent.parent
+BASE = candidate if (candidate / 'controller.py').exists() else Path.home() / '.local/share/teams-effects'
+sys.path.insert(0, str(BASE))
+from i18n import translate
+from reactions import REACTIONS
+from settings import LANGUAGES, load_settings, update_settings
+
+VERSION = (BASE / 'VERSION').read_text().strip()
+UNIT = 'teams-effects.service'
+
+
+def emit(value):
+    print(json.dumps({'schema_version': 1, 'version': VERSION, **value}, ensure_ascii=False))
+
+
+def main():
+    language = load_settings()['language']
+    parser = argparse.ArgumentParser(description='HandSpark: local gesture reactions for your Linux webcam.')
+    parser.add_argument('--version', action='version', version='HandSpark ' + VERSION)
+    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language and commands')
+    parser.add_argument('command', nargs='?', default='panel', choices=(
+        'panel', 'setup', 'start', 'stop', 'status', 'list', 'language',
+        'pause', 'resume', 'cancel', 'react', 'commands', *REACTIONS))
+    parser.add_argument('argument', nargs='?')
+    args = parser.parse_args()
+    action = args.command
+    if args.argument is not None and action not in ('language', 'react'):
+        parser.error('This command does not take an argument')
+    if args.json and action not in ('status', 'list', 'language', 'commands'):
+        parser.error('--json is supported by status, list, language and commands')
+    if action == 'commands':
+        emit({'ok': True, 'commands': {
+            'status --json': 'Read camera status; never includes a preview',
+            'list --json': 'List reaction identifiers and gestures',
+            'start': 'Start the webcam and gesture recognition',
+            'stop': 'Stop the webcam',
+            'react <id>': 'Play one reaction; starts the camera if needed',
+            'cancel': 'Stop the current effect while keeping the camera on',
+            'pause': 'Pause gestures while keeping the camera on',
+            'resume': 'Resume gesture recognition',
+            'language [nl|en]': 'Read or change the saved UI language',
+            'panel': 'Show the native control window',
+            'setup': 'Configure this user’s OBS profile and service'},
+            'languages': list(LANGUAGES), 'reactions': list(REACTIONS)})
+        return 0
+    if action == 'list':
+        reactions = [{'id': key, 'name': translate(language, 'reaction.' + key),
+                      'gesture': translate(language, 'gesture.' + key)} for key in REACTIONS]
+        if args.json:
+            emit({'ok': True, 'reactions': reactions})
+        else:
+            for reaction in reactions:
+                print(f'{reaction["id"]:12s} {reaction["gesture"]}')
+        return 0
+    if action == 'language':
+        if args.argument:
+            if args.argument not in LANGUAGES:
+                parser.error(translate(language, 'language_usage'))
+            language = update_settings(language=args.argument)['language']
+        if args.json:
+            emit({'ok': True, 'language': language, 'name': LANGUAGES[language]})
+        else:
+            print(f'{language}: {LANGUAGES[language]}')
+        return 0
+    if action == 'status':
+        if args.json:
+            from control import request
+            try:
+                emit(request('status'))
+            except (OSError, ValueError, RuntimeError):
+                emit({'ok': False, 'error_code': 'camera_offline'})
+                return 3
+            return 0
+        return subprocess.call(['systemctl', '--user', 'status', '--no-pager', UNIT])
+    if action == 'stop':
+        return subprocess.call(['systemctl', '--user', 'stop', UNIT])
+    if action in ('pause', 'resume', 'cancel'):
+        from control import request
+        request('cancel' if action == 'cancel' else 'automatic',
+                **({} if action == 'cancel' else {'enabled': action == 'resume'}))
+        return 0
+    if action == 'react':
+        if args.argument not in REACTIONS:
+            parser.error('Choose a reaction from: ' + ', '.join(REACTIONS))
+        action = args.argument
+    from bootstrap import ensure_setup
+    ensure_setup(BASE)
+    if action == 'setup':
+        return 0
+    if action == 'panel':
+        os.execv('/usr/bin/python3', ['/usr/bin/python3', str(BASE / 'panel.py')])
+    keys = [key for key in ('DISPLAY', 'XAUTHORITY', 'WAYLAND_DISPLAY', 'XDG_SESSION_TYPE',
+                            'XDG_CURRENT_DESKTOP') if key in os.environ]
+    if keys:
+        subprocess.run(['systemctl', '--user', 'import-environment', *keys], check=True)
+    subprocess.run(['systemctl', '--user', 'start', UNIT], check=True)
+    if action in REACTIONS:
+        from control import request
+        request('react', reaction=action)
+    return 0
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+        sys.exit(str(error))

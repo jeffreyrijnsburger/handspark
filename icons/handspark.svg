@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">HandSpark</title><desc id="desc">A hand sending a bright spark of light</desc>
+  <defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#25dfc0"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+  <rect x="4" y="4" width="120" height="120" rx="29" fill="#122035"/>
+  <path d="M40 96V45a7 7 0 0 1 14 0v22-5a7 7 0 0 1 14 0v5-2a7 7 0 0 1 14 0V49a7 7 0 0 1 14 0v31c0 21-11 30-28 30H56c-11 0-17-5-23-14L23 80a7 7 0 0 1 11-9l14 16" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m78 13 3.8 11.2L93 28l-11.2 3.8L78 43l-3.8-11.2L63 28l11.2-3.8Z" fill="#f7cd70"/>
+  <path d="m100 20 7-7M106 38h9M58 22l-5-7" fill="none" stroke="#f7cd70" stroke-width="4" stroke-linecap="round"/>
+</svg>
