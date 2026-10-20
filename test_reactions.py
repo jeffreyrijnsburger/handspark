@@ -34,6 +34,25 @@ class RainTests(unittest.TestCase):
         for t in (0, DURATION):
             self.assertIsNone(renderer.frame(t).getchannel('A').getbbox())
 
+    def test_lightning_has_two_localized_strikes_and_lights_the_cloud(self):
+        renderer = Renderer('rain')
+        bolts = renderer.bolts
+        for t in (1.38, 3.43):
+            with self.subTest(time=t):
+                lit = np.asarray(renderer.frame(t)).astype(float)
+                renderer.bolts = ()
+                plain = np.asarray(renderer.frame(t)).astype(float)
+                renderer.bolts = bolts
+                self.assertGreater(int((lit[200:430, :, 0] > 225).sum()), 300)
+                self.assertGreater(float((lit - plain)[70:160, 240:700, :3].mean()), 10)
+                self.assertTrue(np.array_equal(lit[:, :100], plain[:, :100]))
+                self.assertTrue(np.array_equal(lit[:, -100:], plain[:, -100:]))
+        for t in (0.5, 2, 4):
+            lit = np.asarray(renderer.frame(t))
+            renderer.bolts = ()
+            self.assertTrue(np.array_equal(lit, np.asarray(renderer.frame(t))))
+            renderer.bolts = bolts
+
 
 class ThumbVisualTests(unittest.TestCase):
     def test_thumbs_have_shading_padding_and_different_silhouettes(self):

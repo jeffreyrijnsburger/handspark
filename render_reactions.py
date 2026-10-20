@@ -107,6 +107,12 @@ class Renderer:
                 self.bursts.append((x * WIDTH, y * HEIGHT, spawn, colors[i], sparks))
         elif reaction == 'rain':
             self.cloud = self.make_cloud()
+            self.bolts = (
+                (1.2, ((290, 132), (267, 207), (302, 195), (254, 282), (284, 267), (232, 405)),
+                 ((267, 207), (226, 239), (238, 256), (197, 297))),
+                (3.25, ((633, 136), (609, 213), (646, 198), (599, 285), (630, 271), (584, 413)),
+                 ((599, 285), (654, 308), (647, 329), (691, 359))),
+            )
             self.particles = [(self.rng.uniform(0.18, 0.82) * WIDTH,
                                self.rng.uniform(0, HEIGHT), self.rng.uniform(450, 750),
                                self.rng.uniform(8, 24), self.rng.random()) for _ in range(180)]
@@ -274,9 +280,36 @@ class Renderer:
             draw.line((x + wind, y, x + wind + dx, y + length),
                       fill=(185, 210, 242, round((75 + 105 * depth) * fade)),
                       width=1 if depth < 0.65 else 2)
+        lightning = Image.new('RGBA', frame.size)
+        strike = ImageDraw.Draw(lightning)
+        flashes = []
+        for spawn, path, branch in self.bolts:
+            age = (t - spawn) / 0.36
+            strength = math.sin(age * math.pi) ** 2 if 0 < age < 1 else 0
+            flashes.append(strength)
+            if strength <= 0:
+                continue
+            a = strength * fade
+            strike.line(path, fill=(88, 160, 255, round(210 * a)), width=9, joint='curve')
+            strike.line(branch, fill=(111, 180, 255, round(190 * a)), width=5, joint='curve')
+        flash = max(flashes, default=0)
+        if flash:
+            frame = Image.alpha_composite(frame, lightning.filter(ImageFilter.GaussianBlur(8)))
+            for spawn, path, branch in self.bolts:
+                age = (t - spawn) / 0.36
+                if 0 < age < 1:
+                    a = math.sin(age * math.pi) ** 2 * fade
+                    strike.line(path, fill=(234, 246, 255, round(255 * a)), width=3, joint='curve')
+                    strike.line(branch, fill=(215, 236, 255, round(235 * a)), width=2, joint='curve')
+            frame = Image.alpha_composite(frame, lightning)
         # The cloud covers the rain's spawn points instead of drops crossing
         # its surface. The complete padded sprite stays inside the video.
-        frame.alpha_composite(opacity(self.cloud, fade), (cloud_x, cloud_y))
+        cloud = self.cloud
+        if flash:
+            illuminated = Image.new('RGBA', cloud.size, (206, 226, 255))
+            illuminated.putalpha(cloud.getchannel('A'))
+            cloud = Image.blend(cloud, illuminated, flash * 0.42)
+        frame.alpha_composite(opacity(cloud, fade), (cloud_x, cloud_y))
         return frame
 
     def lasers(self, t):

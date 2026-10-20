@@ -54,6 +54,9 @@ De animaties duren vijf seconden. Tussen reacties zit zes seconden pauze.
 Laat hetzelfde gebaar los voordat je het herhaalt.
 Lasers, vuurwerk, ballonnen en confetti verschijnen achter je lichaam.
 
+De regenreactie heeft een belichte wolk, vallende druppels en twee vertakte
+bliksemflitsen. De duimreacties verschijnen in glanzende bubbels.
+
 ## Camera-uitvoer
 
 Bij **Camera-uitvoer** kies je 360p, 540p of 720p, altijd met 30 fps.

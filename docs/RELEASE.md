@@ -4,7 +4,7 @@ HandSpark 0.3.0 adds lighter camera output and improves reactions.
 - Camera output defaults to 360p / 30 fps. Choose 360p, 540p or 720p in the native panel, independently of preview resolution. Changing output briefly restarts the camera.
 - `handspark output --resolution 360` saves output size offline; `handspark restart` explicitly applies it. Online status reports the output size and frame rate from OBS.
 - Thumbs up/down use glass bubbles, shaded silver fingers and a soft pop animation.
-- A softly lit volumetric storm cloud and its shadow stay fully inside the video. Layered rainfall emerges beneath it. All rendering happens during asset preparation.
+- A softly lit volumetric storm cloud and its shadow stay fully inside the video. Layered rainfall and two branching lightning strikes emerge beneath it, with brief illumination inside the cloud. All rendering happens during asset preparation.
 - Stricter geometry requires a straight, extended thumb beyond folded fingers to reduce accidental thumb reactions, rain and fireworks.
 
 The interface now uses app-neutral labels, with camera selection guidance for Teams and Zoom in the README.

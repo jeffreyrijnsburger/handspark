@@ -12,6 +12,7 @@
 - Require a straight, fully extended thumb beyond folded fingers to reduce
   accidental reactions, including their two-hand variants.
 - Preserve tilted and mirrored deliberate thumbs up/down.
+- Add two branching lightning strikes with a localized glow and cloud illumination.
 - Keep the whole rain cloud and its soft shadow inside the animation.
 - Render a softly lit volumetric storm cloud and layered, wind-swept rainfall
   beneath it. Cloud rendering happens during asset preparation, not live video.

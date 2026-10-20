@@ -29,6 +29,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 ## What you get
 
 - Eight automatic hand reactions and eight manual reaction buttons.
+- Glass thumb bubbles and a softly lit rain cloud with branching lightning.
 - Lasers, fireworks, balloons and confetti behind your body using a soft person mask.
 - A native Qt window with a live composited camera preview up to 30 fps.
 - Pause gestures, stop an effect, or stop the camera independently.
