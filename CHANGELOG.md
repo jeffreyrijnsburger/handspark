@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 — 2026-10-20
+
+- Fix the missing system tray icon on KDE/StatusNotifier desktops by supplying
+  explicit raster sizes, including small and high-density variants, from the
+  existing vector logo. Keep the hand and two arcs unchanged.
+
 ## 0.6.0 — 2026-10-20
 
 - Add an optional system tray icon with Open, camera on/off and Quit actions.
