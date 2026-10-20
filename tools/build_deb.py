@@ -82,7 +82,7 @@ Description: Local hand gesture reactions for Linux video calls
  Includes the inference runtime, models and rendered animations.
 ''')
         target = output / f'handspark_{version}_ubuntu24.04_amd64.deb'
-        subprocess.run(['dpkg-deb', '--root-owner-group', '--threads-max=2', '-Zxz', '-z6', '--build', str(stage), str(target)], check=True)
+        subprocess.run(['dpkg-deb', '--root-owner-group', '--threads-max=2', '-Zzstd', '-z10', '--build', str(stage), str(target)], check=True)
     digest = hashlib.sha256(target.read_bytes()).hexdigest()
     (output / 'SHA256SUMS').write_text(f'{digest}  {target.name}\n')
     print(target)

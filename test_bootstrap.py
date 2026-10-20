@@ -1,5 +1,7 @@
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch, Mock
@@ -39,6 +41,19 @@ class BootstrapTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Close OBS'):
                 bootstrap.configure_obs()
         self.assertFalse((self.home / '.config').exists())
+
+    def test_generated_service_accepts_paths_with_spaces_and_specifiers(self):
+        base = self.home / 'app with % and $ in name'
+        (base / '.venv/bin').mkdir(parents=True)
+        (base / '.venv/bin/python').symlink_to('/usr/bin/python3')
+        unit = self.home / 'handspark-test.service'
+        unit.write_text(bootstrap.unit_text(base))
+        runtime = self.home / 'runtime'
+        runtime.mkdir(mode=0o700)
+        result = subprocess.run(['systemd-analyze', '--user', 'verify', str(unit)],
+                                env={**os.environ, 'XDG_RUNTIME_DIR': str(runtime)},
+                                text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_initial_configuration_preserves_existing_obs_settings(self):
         path = self.home / '.config/obs-studio/plugin_config/obs-websocket/config.json'

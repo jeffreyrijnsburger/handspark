@@ -78,8 +78,7 @@ StartLimitBurst=5
 
 [Service]
 Type=notify
-ExecStart="{quoted}/.venv/bin/python" "{quoted}/controller.py"
-WorkingDirectory="{quoted}"
+ExecStart=:"{quoted}/.venv/bin/python" "{quoted}/controller.py"
 TimeoutStopSec=15
 TimeoutStartSec=60
 Environment=PYTHONUNBUFFERED=1
