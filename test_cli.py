@@ -98,6 +98,32 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.call('on-close', 'invalid').returncode, 2)
         self.assertEqual(self.call('tray', 'invalid').returncode, 2)
 
+    def test_start_and_restart_replace_the_launcher_instead_of_leaving_helpers(self):
+        app = Path(self.folder.name) / 'app'
+        (app / 'bin').mkdir(parents=True)
+        (app / '.venv/bin').mkdir(parents=True)
+        (app / '.venv/bin/python').symlink_to('/usr/bin/python3')
+        for name in ('bin/handspark', 'controller.py', 'bootstrap.py', 'settings.py', 'i18n.py', 'reactions.py', 'VERSION'):
+            (app / name).write_bytes((BASE / name).read_bytes())
+        helpers = Path(self.folder.name) / 'helpers'
+        helpers.mkdir()
+        systemctl = helpers / 'systemctl'
+        systemctl.write_text(
+            '#!/usr/bin/python3\nimport json, os, pathlib, sys\n'
+            'if sys.argv[2] in ("start", "restart"):\n'
+            ' print(json.dumps({"pid": os.getpid(), "action": sys.argv[2]}))\n')
+        systemctl.chmod(0o755)
+        pgrep = helpers / 'pgrep'
+        pgrep.write_text('#!/bin/sh\nexit 1\n')
+        pgrep.chmod(0o755)
+        env = {**self.env, 'PATH': str(helpers) + os.pathsep + os.environ['PATH']}
+        for action in ('start', 'restart'):
+            process = subprocess.Popen(['/usr/bin/python3', str(app / 'bin/handspark'), action],
+                                       env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate(timeout=5)
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertEqual(json.loads(stdout), {'pid': process.pid, 'action': action})
+
 
 if __name__ == '__main__':
     unittest.main()
