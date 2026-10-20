@@ -150,6 +150,7 @@ def recognize(obs, overlays, stopping):
     from PIL import Image
     from control import Control
     from matte import BACKGROUND_REACTIONS, PersonMatte
+    from hagrid_classifier import load_classifier
     import queue
 
     saved = load_settings()
@@ -161,6 +162,7 @@ def recognize(obs, overlays, stopping):
         min_hand_detection_confidence=0.6,
         min_hand_presence_confidence=0.6, min_tracking_confidence=0.5)
     gate = ReactionTrigger(cooldown=6.0)
+    classifier = load_classifier()
     control = Control()
     matte = PersonMatte(obs, CAMERA, SCENE)
     active = None
@@ -195,7 +197,8 @@ def recognize(obs, overlays, stopping):
     with mp.tasks.vision.HandLandmarker.create_from_options(options) as landmarker:
         video = obs.call('GetVideoSettings')
         control.update(**settings, output_resolution=video['outputHeight'],
-                       output_fps=video['fpsNumerator'] / video['fpsDenominator'])
+                       output_fps=video['fpsNumerator'] / video['fpsDenominator'],
+                       gesture_engine='hagrid+geometry' if classifier else 'geometry')
         control.start()
         LOG.info('Klaar: acht gebaren, diepte-effecten en lokale camerabediening')
         address = os.environ.get('NOTIFY_SOCKET')
@@ -233,6 +236,7 @@ def recognize(obs, overlays, stopping):
                     needs_hands = settings['automatic'] or behind
                     gesture = None
                     hands = []
+                    thumb_predictions = None
                     if needs_hands:
                         screenshot = obs.call('GetSourceScreenshot', sourceName=CAMERA,
                                               imageFormat='jpg', imageWidth=640, imageHeight=360,
@@ -246,10 +250,13 @@ def recognize(obs, overlays, stopping):
                         raw_hands = [[(p.x, p.y) for p in hand] for hand in result.hand_landmarks]
                         aspect = rgb.shape[1] / rgb.shape[0]
                         hands = [[(x * aspect, y) for x, y in hand] for hand in raw_hands]
-                        gesture = classify(hands)
+                        if settings['automatic'] and classifier:
+                            thumb_predictions = classifier.predict(rgb, raw_hands)
+                        gesture = classify(hands, thumb_predictions=thumb_predictions)
                     reaction = gate.update(gesture if settings['automatic'] else None, started)
                     if reaction and not active:
-                        start_effect(reaction, started, reaction_anchor(reaction, hands, aspect))
+                        start_effect(reaction, started, reaction_anchor(
+                            reaction, hands, aspect, thumb_predictions=thumb_predictions))
                     if settings['depth'] and active in BACKGROUND_REACTIONS and rgb is not None:
                         matte.update(rgb, raw_hands)
                         if not matte.enabled:
@@ -262,6 +269,7 @@ def recognize(obs, overlays, stopping):
                         control.update(preview=preview)
                         last_preview = now
                     control.update(**settings, reaction=active,
+                                   gesture_engine='hagrid+geometry' if classifier and classifier.enabled else 'geometry',
                                    remaining=max(0.0, hide_at - now) if active else 0,
                                    candidate=gesture, progress=gate.progress(started),
                                    needs_release=not gate.armed and (gate.require_release or gesture == gate.last_reaction),

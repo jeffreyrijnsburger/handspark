@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 — 2026-10-20
+
+- Add the small HaGRID hand-crop image classifier to support thumbs up/down,
+  fireworks and rain alongside MediaPipe geometry, using the existing OpenCV runtime.
+- Combine confident image evidence with basic finger and direction checks;
+  defer uncertain predictions to geometry and retain hold/release/cooldown behavior.
+- Preserve recovered thumbs’ camera placement and reject duplicate hand tracks.
+- Fall back to geometry if the model is missing, fails integrity checks or cannot
+  run; report the active recognizer through the additive `gesture_engine` status field.
+- Bundle the checksum-pinned model and its upstream license; document provenance,
+  limited public-dataset sanity checks and CPU measurements.
+
 ## 0.4.3 — 2026-10-20
 
 - Recognize natural thumbs up/down with shorter thumb extension, modest hand

@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.task
 *.tflite
+*.onnx
 *.mov
 reactions-apple/
 *.download

@@ -21,6 +21,25 @@ https://github.com/google-ai-edge/mediapipe
 https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker
 https://ai.google.dev/edge/mediapipe/solutions/vision/image_segmenter
 
+## HaGRID hand-crop model
+
+`hagrid_crops.onnx` is the unmodified hand-crop classifier supplied by the
+HaGRID dynamic-gestures contributors in `ai-forever/dynamic_gestures`, revision
+`557a836bf82fce8d36494d0c17e95ca236f5611c`. Its source URL, SHA-256 and original
+class order are recorded in `hagrid-model.json`. The upstream repository supplies
+the Apache License 2.0 text, reproduced in `licenses/hagrid-APACHE-2.0.txt`.
+This model retains its own license and is not relicensed under HandSpark’s MIT license.
+
+https://github.com/ai-forever/dynamic_gestures
+https://github.com/ai-forever/dynamic_gestures/blob/557a836bf82fce8d36494d0c17e95ca236f5611c/license/LICENSE-2.0.txt
+
+The authors describe this model as trained on HaGRIDv2. The original HaGRID
+dataset has a separate custom license; no dataset images or annotations are
+included in HandSpark. See the dataset authors and license:
+
+https://github.com/hukenovs/hagrid
+https://github.com/hukenovs/hagrid/blob/master/license/en_us.pdf
+
 ## Packaged Python dependencies
 
 The `.deb` includes the packages pinned in `requirements.lock`. Their original

@@ -25,9 +25,31 @@ def _curled(points, pip, tip):
     return _distance(points[tip], points[0]) < _distance(points[pip], points[0])
 
 
-def _thumb_direction(points):
+def _predicted_thumb_direction(points, prediction):
+    """Check basic pose consistency without imposing the geometric thumb fit."""
+    if prediction == 'other':
+        return None
+    scale = max(_distance(points[5], points[17]), _distance(points[0], points[9]) * 0.65)
+    vertical = points[4][1] - points[2][1]
+    if vertical * (-1 if prediction == 'up' else 1) <= scale * 0.1:
+        return None
+    folded = 0
+    for mcp, pip, tip in ((5, 6, 8), (9, 10, 12), (13, 14, 16), (17, 18, 20)):
+        shape = _finger_shape(points, mcp, pip, tip, scale)
+        if shape is None:
+            continue
+        angle, ratio = shape
+        if angle > 165 and _distance(points[tip], points[mcp]) > 1.3 * _distance(points[pip], points[mcp]):
+            return None
+        folded += angle < 165 or ratio < 1.0
+    return prediction if folded >= 3 else None
+
+
+def _thumb_direction(points, prediction=None):
     if not _valid(points):
         return None
+    if prediction is not None:
+        return _predicted_thumb_direction(points, prediction)
     # An oblique or loosely closed fist can put a folded fingertip slightly
     # farther from the wrist than its middle joint. Keep the joint-angle
     # check, but do not require every fingertip to fold toward the wrist.
@@ -88,7 +110,18 @@ def is_two_hand_heart(a, b):
     return True
 
 
-def classify(hands):
+def _thumb_predictions(hands, predictions):
+    if predictions is None:
+        return [None] * len(hands)
+    if len(predictions) != len(hands) or any(p not in (None, 'up', 'down', 'other') for p in predictions):
+        raise ValueError('Thumb predictions must match the hand list')
+    return predictions
+
+
+def classify(hands, *, thumb_predictions=None):
+    """Combine hand poses; optional image evidence augments only the thumbs."""
+    hands = list(hands)
+    predictions = _thumb_predictions(hands, thumb_predictions)
     def same_hand(a, b):
         center_a = [(a[0][c] + a[9][c]) / 2 for c in (0, 1)]
         center_b = [(b[0][c] + b[9][c]) / 2 for c in (0, 1)]
@@ -97,7 +130,8 @@ def classify(hands):
         return _distance(center_a, center_b) < 0.4 * scale and rms < 0.22 * scale
 
     unique = []
-    for hand in hands:
+    unique_predictions = []
+    for hand, prediction in zip(hands, predictions):
         if not _valid(hand):
             continue
         # Tracking can briefly report the same hand twice. Such a duplicate
@@ -105,14 +139,15 @@ def classify(hands):
         if any(same_hand(hand, other) for other in unique):
             continue
         unique.append(hand)
+        unique_predictions.append(prediction)
     hands = unique
     if any(is_two_hand_heart(a, b) for a, b in combinations(hands, 2)):
         return 'heart'
     if any(is_salute(hand) for hand in hands):
         return 'prosper'
     poses = []
-    for hand in hands:
-        direction = _thumb_direction(hand)
+    for hand, prediction in zip(hands, unique_predictions):
+        direction = _thumb_direction(hand, prediction)
         if direction:
             poses.append('thumbs_' + direction)
         elif is_peace(hand):
@@ -131,22 +166,29 @@ def classify(hands):
     return None
 
 
+def _finger_shape(landmarks, mcp, pip, tip, scale):
+    a, b, c = landmarks[mcp], landmarks[pip], landmarks[tip]
+    u, v = (a[0] - b[0], a[1] - b[1]), (c[0] - b[0], c[1] - b[1])
+    norm = math.hypot(*u) * math.hypot(*v)
+    if norm < scale * scale * 0.005:
+        return None
+    cosine = max(-1.0, min(1.0, (u[0] * v[0] + u[1] * v[1]) / norm))
+    angle = math.degrees(math.acos(cosine))
+    ratio = _distance(c, landmarks[0]) / max(_distance(b, landmarks[0]), scale * 0.1)
+    return angle, ratio
+
+
 def _finger_pattern(landmarks, pattern, *, folded_ratio=1.02):
     if not _valid(landmarks):
         return False
 
-    wrist = landmarks[0]
     scale = _distance(landmarks[5], landmarks[17])
 
     def finger(mcp, pip, tip, extended):
-        a, b, c = landmarks[mcp], landmarks[pip], landmarks[tip]
-        u, v = (a[0] - b[0], a[1] - b[1]), (c[0] - b[0], c[1] - b[1])
-        norm = math.hypot(*u) * math.hypot(*v)
-        if norm < scale * scale * 0.005:
+        shape = _finger_shape(landmarks, mcp, pip, tip, scale)
+        if shape is None:
             return False
-        cosine = max(-1.0, min(1.0, (u[0] * v[0] + u[1] * v[1]) / norm))
-        angle = math.degrees(math.acos(cosine))
-        ratio = _distance(c, wrist) / max(_distance(b, wrist), scale * 0.1)
+        angle, ratio = shape
         if extended:
             return angle > 145 and ratio > 1.07
         return angle < 155 and ratio < folded_ratio
@@ -190,7 +232,7 @@ def is_salute(points):
             and _distance(points[4], points[0]) > 1.05 * _distance(points[3], points[0]))
 
 
-def reaction_anchor(reaction, hands, aspect=1.0):
+def reaction_anchor(reaction, hands, aspect=1.0, *, thumb_predictions=None):
     """Position localized effects near the gesture; full-frame effects stay put."""
     if reaction == 'heart' and len(hands) >= 2:
         for a, b in combinations(hands, 2):
@@ -198,9 +240,9 @@ def reaction_anchor(reaction, hands, aspect=1.0):
                 return ((a[4][0] + b[4][0]) / (2 * aspect),
                         (a[4][1] + b[4][1]) / 2)
     if reaction in ('thumbs_up', 'thumbs_down'):
-        check = is_thumbs_up if reaction == 'thumbs_up' else is_thumbs_down
-        for hand in hands:
-            if check(hand):
+        direction = 'up' if reaction == 'thumbs_up' else 'down'
+        for hand, prediction in zip(hands, _thumb_predictions(hands, thumb_predictions)):
+            if _thumb_direction(hand, prediction) == direction:
                 x = (hand[0][0] + hand[5][0]) / (2 * aspect)
                 minimum_y = 0.32 if reaction == 'thumbs_up' else 0.2
                 y = max(minimum_y, min(0.6, (hand[4][1] + hand[0][1]) / 2 - 0.12))
