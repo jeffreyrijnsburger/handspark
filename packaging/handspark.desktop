@@ -27,6 +27,6 @@ Name[nl]=Effect stoppen
 Exec=handspark cancel
 
 [Desktop Action Stop]
-Name=Stop camera
-Name[nl]=Camera stoppen
+Name=Turn camera off
+Name[nl]=Camera uitschakelen
 Exec=handspark stop

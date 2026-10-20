@@ -194,7 +194,7 @@ class Panel(QtWidgets.QWidget):
         self.setWindowTitle(self.text('window_title'))
         self.title.setText(self.text('title'))
         self.guide.setText(self.text('guide'))
-        self.camera.setText(self.text('camera_stop' if self.online else 'camera_start'))
+        self.update_camera_label()
         self.automatic.setText(self.text('automatic'))
         self.automatic.setToolTip(self.text('automatic_help'))
         self.depth.setText(self.text('depth'))
@@ -223,6 +223,11 @@ class Panel(QtWidgets.QWidget):
         self.preview.placeholder = self.text('preview_placeholder')
         self.preview.update()
         self.render_feedback()
+
+    def update_camera_label(self):
+        key = 'camera_stop' if self.online else 'camera_start'
+        self.camera.setText(self.text(key))
+        self.camera.setToolTip(self.text(key + '_help'))
 
     def change_language(self, index):
         language = self.language_choice.itemData(index)
@@ -388,7 +393,7 @@ class Panel(QtWidgets.QWidget):
         self.reader.stop()
         self.preview_error = False
         self.last_state = {}
-        self.camera.setText(self.text('camera_start'))
+        self.update_camera_label()
         self.camera.setEnabled(not self.starting)
         for control in (*self.buttons.values(), self.automatic, self.depth, self.cancel):
             control.setEnabled(False)
@@ -402,7 +407,7 @@ class Panel(QtWidgets.QWidget):
         if self.live_preview and not self.starting:
             self.reader.start()
         self.last_state = state
-        self.camera.setText(self.text('camera_stop'))
+        self.update_camera_label()
         self.camera.setEnabled(not self.starting and self.process.state() == QtCore.QProcess.NotRunning)
         for control in (*self.buttons.values(), self.automatic, self.depth):
             control.setEnabled(True)
