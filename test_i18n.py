@@ -100,7 +100,7 @@ class TranslationTests(unittest.TestCase):
                 self.assertIn('gesture.' + reaction, MESSAGES[language])
 
     def test_unknown_language_falls_back_to_english(self):
-        self.assertEqual(translate('fr', 'camera_start'), 'Start camera')
+        self.assertEqual(translate('fr', 'camera_start'), 'Turn camera on')
         self.assertEqual(translate('en', 'external error {raw}'), 'external error {raw}')
 
 

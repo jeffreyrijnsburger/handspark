@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.2 — 2026-10-20
+
+- Label the camera controls “Turn camera on/off” in English and
+  “Camera inschakelen/uitschakelen” in Dutch, including the desktop action.
+- Explain that turning the camera off also stops the virtual camera and
+  reactions, while closing the window leaves them running outside calls.
+- Keep camera tooltips synchronized with the current state and language.
+
 ## 0.4.1 — 2026-10-20
 
 - Replace the app icon’s short motion lines with two rounded arcs above the
