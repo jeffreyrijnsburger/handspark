@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">HandSpark</title>
-  <desc id="desc">A raised mint hand with three warm motion lines</desc>
+  <desc id="desc">A raised mint hand beneath two warm arcs, one thin and one thick</desc>
   <rect x="4" y="4" width="120" height="120" rx="28" fill="#12253a"/>
-  <path d="M49 105c-9-4-14-13-20-22l-9-14c-5-8 6-15 12-8l10 12V43c0-10 14-10 14 0v18h4V29c0-10 14-10 14 0v32h4V37c0-10 14-10 14 0v30h4V53c0-10 14-10 14 0v29c0 20-12 28-30 28H62c-5 0-9-2-13-5Z" fill="#70e3c4"/>
-  <path d="M46 75c6 4 9 10 10 17" fill="none" stroke="#246a68" stroke-width="4" stroke-linecap="round" opacity=".55"/>
-  <path d="m28 38-8-8m-3 18-8-2m34-20-4-9" fill="none" stroke="#ffc66b" stroke-width="5" stroke-linecap="round"/>
+  <g transform="translate(9 15) scale(.86)">
+    <path d="M49 105c-9-4-14-13-20-22l-9-14c-5-8 6-15 12-8l10 12V43c0-10 14-10 14 0v18h4V29c0-10 14-10 14 0v32h4V37c0-10 14-10 14 0v30h4V53c0-10 14-10 14 0v29c0 20-12 28-30 28H62c-5 0-9-2-13-5Z" fill="#70e3c4"/>
+    <path d="M46 75c6 4 9 10 10 17" fill="none" stroke="#246a68" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+  </g>
+  <path d="M28 30C48 7 84 5 109 28" fill="none" stroke="#ffc66b" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M38 34C56 18 82 18 99 34" fill="none" stroke="#ffc66b" stroke-width="5.4" stroke-linecap="round"/>
 </svg>

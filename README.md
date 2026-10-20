@@ -1,4 +1,4 @@
-<p align="center"><img src="icons/handspark.svg" width="112" height="112" alt="HandSpark logo: a raised hand with motion lines"></p>
+<p align="center"><img src="icons/handspark.svg" width="112" height="112" alt="HandSpark logo: a raised hand beneath a thin and a thick arc"></p>
 
 # HandSpark
 
@@ -14,7 +14,7 @@ gesture mappings and independently written animations. No Apple software or
 proprietary effects are included. This is a community project, unaffiliated with
 Apple, Microsoft, Zoom or OBS.
 
-**Version 0.4.0 · MIT · Linux · Dutch / English**
+**Version 0.4.1 · MIT · Linux · Dutch / English**
 
 Latest ready-to-install build:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -52,7 +52,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 | --- | --- |
 | Ubuntu 24.04, amd64, KDE/X11, Python 3.12 | Tested target; `.deb` available |
 | Other Linux distributions / Wayland | May work from source; untested |
-| Windows / macOS | Not supported in 0.4.0 |
+| Windows / macOS | Not supported in 0.4.1 |
 
 The current implementation uses OBS Studio, V4L2 loopback and a systemd user
 service. Recognition and rendering could be reused for other platforms, but
@@ -69,14 +69,14 @@ checksum-pinned models and rendered animations. You do **not** need to clone
 the repository, install pip packages or render effects to use that build.
 System OBS, Qt, FFmpeg and a working V4L2 loopback driver are still required.
 
-1. Download `handspark_0.4.0_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
+1. Download `handspark_0.4.1_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
 2. From that download folder:
 
    ```sh
    sha256sum -c SHA256SUMS
    sudo apt update
    sudo apt install -t noble-backports obs-studio
-   sudo apt install ./handspark_0.4.0_ubuntu24.04_amd64.deb
+   sudo apt install ./handspark_0.4.1_ubuntu24.04_amd64.deb
    ```
 
    OBS 30.2 or newer is required. Ubuntu 24.04's original OBS 30.0 package can
