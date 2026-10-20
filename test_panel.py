@@ -31,6 +31,17 @@ class PanelLanguageTests(unittest.TestCase):
         self.widget.language_choice.setCurrentIndex(self.widget.language_choice.findData(code))
         self.app.processEvents()
 
+    def test_tray_advertises_visible_pixels_at_small_and_high_density_sizes(self):
+        icon = self.widget.tray.icon()
+        sizes = {(size.width(), size.height()) for size in icon.availableSizes()}
+        for edge in (16, 22, 24, 32, 44, 48, 64, 128):
+            with self.subTest(edge=edge):
+                self.assertIn((edge, edge), sizes, 'The tray host must receive a concrete size')
+                image = icon.pixmap(edge, edge).toImage()
+                self.assertFalse(image.isNull())
+                self.assertGreater(image.pixelColor(image.width() // 2, image.height() // 2).alpha(), 0)
+                self.assertEqual(image.pixelColor(0, 0).alpha(), 0, 'Keep the logo background transparent')
+
     def test_live_translation_preserves_video_controls_and_progress(self):
         with patch.object(panel, 'request') as request:
             self.widget.apply_status({'automatic': True, 'depth': False, 'candidate': 'heart', 'progress': 0.4})

@@ -20,6 +20,19 @@ def launcher_path():
     return bundled if bundled.exists() else Path.home() / '.local/bin/teams-effects'
 
 
+def tray_icon(source):
+    """Give StatusNotifier hosts concrete pixels instead of a size-less SVG."""
+    icon = QtGui.QIcon()
+    for edge in (16, 22, 24, 32, 44, 48, 64, 128):
+        pixmap = QtGui.QPixmap(edge, edge)
+        pixmap.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(pixmap)
+        source.paint(painter, pixmap.rect())
+        painter.end()
+        icon.addPixmap(pixmap)
+    return icon
+
+
 class Preview(QtWidgets.QWidget):
     def __init__(self, language):
         super().__init__()
@@ -203,7 +216,7 @@ class Panel(QtWidgets.QWidget):
         self.shutdown_process = QtCore.QProcess(self)
         self.shutdown_process.finished.connect(self.shutdown_finished)
         self.shutdown_process.errorOccurred.connect(self.shutdown_error)
-        self.tray = QtWidgets.QSystemTrayIcon(self.windowIcon(), self)
+        self.tray = QtWidgets.QSystemTrayIcon(tray_icon(self.windowIcon()), self)
         self.tray.setToolTip('HandSpark')
         self.tray_menu = QtWidgets.QMenu(self)
         self.tray_open = self.tray_menu.addAction('')

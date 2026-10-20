@@ -47,7 +47,7 @@ Hardware validation also needs a physical webcam, loopback device and OBS.
 
 ```sh
 python3 tools/build_deb.py
-dpkg-deb --info dist/handspark_0.6.0_ubuntu24.04_amd64.deb
+dpkg-deb --info dist/handspark_0.6.1_ubuntu24.04_amd64.deb
 (cd dist && sha256sum -c SHA256SUMS)
 ```
 
