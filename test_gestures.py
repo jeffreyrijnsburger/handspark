@@ -1,4 +1,5 @@
 import math
+import random
 import unittest
 
 from gestures import (ReactionTrigger, classify, is_horns, is_peace, is_salute,
@@ -31,6 +32,12 @@ def side_on_thumb():
         (0.60, 0.65), (0.72, 0.62), (0.71, 0.70), (0.58, 0.74),
         (0.64, 0.70), (0.73, 0.69), (0.71, 0.76), (0.62, 0.78),
     )]
+
+
+def compact_thumb():
+    points = thumbs_up()
+    points[2], points[3], points[4] = [0.28, 0.68], [0.27, 0.575], [0.26, 0.47]
+    return points
 
 
 def salute():
@@ -182,6 +189,57 @@ class GestureTests(unittest.TestCase):
             down = [[x, 1 - y] for x, y in points]
             self.assertEqual(classify([down]), 'thumbs_down')
             self.assertEqual(classify(pair(down)), 'rain')
+
+    def test_natural_thumbs_tolerate_shorter_extension_and_relaxed_fingers(self):
+        relaxed = side_on_thumb()
+        relaxed[7], relaxed[8] = [0.70, 0.56], [0.76, 0.59]
+        for name, pose in (('compact', compact_thumb()), ('relaxed', relaxed)):
+            for mirror in (-1, 1):
+                for angle in (-0.55, 0, 0.55):
+                    for scale in (0.3, 1, 2):
+                        c, s = math.cos(angle), math.sin(angle)
+                        up = [[scale * (mirror * x * c - y * s) + 0.15,
+                               scale * (mirror * x * s + y * c) - 0.1]
+                              for x, y in pose]
+                        down = [[x, -y] for x, y in up]
+                        with self.subTest(pose=name, mirror=mirror, angle=angle, scale=scale):
+                            self.assertEqual(classify([up]), 'thumbs_up')
+                            self.assertEqual(classify([down]), 'thumbs_down')
+                            self.assertEqual(classify(pair(up)), 'fireworks')
+                            self.assertEqual(classify(pair(down)), 'rain')
+
+    def test_outstretched_fingers_with_an_upright_thumb_do_not_trigger(self):
+        pointing = side_on_thumb()
+        pointing[7], pointing[8] = [0.69, 0.47], [0.80, 0.41]
+        for pose in (hand((True, True, True, True)), pointing):
+            pose[2], pose[3], pose[4] = [0.25, 0.7], [0.22, 0.55], [0.2, 0.35]
+            for mirror in (-1, 1):
+                up = [[mirror * x, y] for x, y in pose]
+                down = [[x, 1 - y] for x, y in up]
+                for points in (up, down):
+                    self.assertIsNone(classify([points]))
+                    self.assertIsNone(classify(pair(points)))
+
+    def test_compact_thumbs_hold_through_small_tracking_jitter(self):
+        rng = random.Random(1947)
+        up = compact_thumb()
+        down = [[x, 1 - y] for x, y in up]
+        for hands, reaction, jitter in (([up], 'thumbs_up', 0.002),
+                                       ([down], 'thumbs_down', 0.002),
+                                       (pair(up), 'fireworks', 0.001),
+                                       (pair(down), 'rain', 0.001)):
+            with self.subTest(reaction=reaction):
+                trigger = ReactionTrigger()
+                fired = []
+                for i in range(18):
+                    sample = [[[x + rng.uniform(-jitter, jitter), y + rng.uniform(-jitter, jitter)]
+                               for x, y in points] for points in hands]
+                    detected = classify(sample)
+                    self.assertEqual(detected, reaction)
+                    result = trigger.update(detected, i / 8)
+                    if result:
+                        fired.append(result)
+                self.assertEqual(fired, [reaction])
 
     def test_partial_and_bent_thumbs_do_not_form_reactions(self):
         cases = {

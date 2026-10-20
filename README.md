@@ -14,7 +14,7 @@ gesture mappings and independently written animations. No Apple software or
 proprietary effects are included. This is a community project, unaffiliated with
 Apple, Microsoft, Zoom or OBS.
 
-**Version 0.4.2 · MIT · Linux · Dutch / English**
+**Version 0.4.3 · MIT · Linux · Dutch / English**
 
 Latest ready-to-install build:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -52,7 +52,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 | --- | --- |
 | Ubuntu 24.04, amd64, KDE/X11, Python 3.12 | Tested target; `.deb` available |
 | Other Linux distributions / Wayland | May work from source; untested |
-| Windows / macOS | Not supported in 0.4.2 |
+| Windows / macOS | Not supported in 0.4.3 |
 
 The current implementation uses OBS Studio, V4L2 loopback and a systemd user
 service. Recognition and rendering could be reused for other platforms, but
@@ -69,14 +69,14 @@ checksum-pinned models and rendered animations. You do **not** need to clone
 the repository, install pip packages or render effects to use that build.
 System OBS, Qt, FFmpeg and a working V4L2 loopback driver are still required.
 
-1. Download `handspark_0.4.2_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
+1. Download `handspark_0.4.3_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
 2. From that download folder:
 
    ```sh
    sha256sum -c SHA256SUMS
    sudo apt update
    sudo apt install -t noble-backports obs-studio
-   sudo apt install ./handspark_0.4.2_ubuntu24.04_amd64.deb
+   sudo apt install ./handspark_0.4.3_ubuntu24.04_amd64.deb
    ```
 
    OBS 30.2 or newer is required. Ubuntu 24.04's original OBS 30.0 package can
@@ -136,7 +136,8 @@ selection and persistent driver configuration are covered in [docs/LINUX.md](doc
 | 🤘🤘 Metal horns with **both** hands | <img src="icons/lasers.svg" width="24" height="24" alt=""> Lasers | `lasers` |
 
 Keep your hands visible and hold the gesture briefly, roughly one second.
-For thumbs up/down, close your other fingers and fully extend your thumb.
+For thumbs up/down, curl your other fingers and point your thumb clearly up
+or down. A relaxed fist and a modest hand tilt are fine.
 For the heart, bring your index fingertips together above and your thumb tips
 together below. Two-hand gestures take priority over their one-hand variants.
 Short tracking gaps are tolerated and duplicate hand tracks are rejected.

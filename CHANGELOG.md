@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.3 — 2026-10-20
+
+- Recognize natural thumbs up/down with shorter thumb extension, modest hand
+  tilt and a relaxed fist; apply the same improvement to fireworks and rain.
+- Measure extension along the thumb and allow folded fingers more tolerance
+  in oblique views. Keep checks for upright direction, straight thumb joints
+  and separation from the folded fingers.
+- Cover compact and relaxed poses across mirroring, tilt and scale, plus
+  small tracking jitter, outstretched fingers and existing rejection cases.
+
 ## 0.4.2 — 2026-10-20
 
 - Label the camera controls “Turn camera on/off” in English and
