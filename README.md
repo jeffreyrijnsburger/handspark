@@ -14,7 +14,7 @@ gesture mappings and independently written animations. No Apple software or
 proprietary effects are included. This is a community project, unaffiliated with
 Apple, Microsoft, Zoom or OBS.
 
-**Version 0.4.3 · MIT · Linux · Dutch / English**
+**Version 0.5.0 · MIT · Linux · Dutch / English**
 
 Latest ready-to-install build:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -29,6 +29,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 ## What you get
 
 - Eight automatic hand reactions and eight manual reaction buttons.
+- HaGRID image classification plus MediaPipe hand geometry for more natural thumbs up/down.
 - A golden thumbs-up with a spring pop, a little nod and colorful celebratory dots.
 - Glass thumbs-down bubbles and a softly lit rain cloud with branching lightning.
 - Lasers, fireworks, balloons and confetti behind your body using a soft person mask.
@@ -52,7 +53,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 | --- | --- |
 | Ubuntu 24.04, amd64, KDE/X11, Python 3.12 | Tested target; `.deb` available |
 | Other Linux distributions / Wayland | May work from source; untested |
-| Windows / macOS | Not supported in 0.4.3 |
+| Windows / macOS | Not supported in 0.5.0 |
 
 The current implementation uses OBS Studio, V4L2 loopback and a systemd user
 service. Recognition and rendering could be reused for other platforms, but
@@ -69,14 +70,14 @@ checksum-pinned models and rendered animations. You do **not** need to clone
 the repository, install pip packages or render effects to use that build.
 System OBS, Qt, FFmpeg and a working V4L2 loopback driver are still required.
 
-1. Download `handspark_0.4.3_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
+1. Download `handspark_0.5.0_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
 2. From that download folder:
 
    ```sh
    sha256sum -c SHA256SUMS
    sudo apt update
    sudo apt install -t noble-backports obs-studio
-   sudo apt install ./handspark_0.4.3_ubuntu24.04_amd64.deb
+   sudo apt install ./handspark_0.5.0_ubuntu24.04_amd64.deb
    ```
 
    OBS 30.2 or newer is required. Ubuntu 24.04's original OBS 30.0 package can
@@ -234,7 +235,9 @@ Read-only commands never start a camera, and status JSON never contains images.
 flowchart LR
   Camera[Physical webcam] --> OBS[OBS camera scene]
   OBS --> Hands[MediaPipe hand detection]
-  Hands --> Gate[Hold, release and cooldown]
+  Hands --> Recognition[HaGRID thumbs and hand geometry]
+  OBS --> Recognition
+  Recognition --> Gate[Hold, release and cooldown]
   Gate --> Effects[Local transparent animations]
   OBS --> Mask[Person segmentation]
   Mask --> Composite[OBS composition]
@@ -243,6 +246,12 @@ flowchart LR
   Composite --> Virtual[V4L2 virtual camera]
   Virtual --> Teams[Teams or another video app]
 ```
+
+MediaPipe locates the hands. A small local HaGRID model reads their image crops
+to support thumbs up/down, fireworks and rain. Hand geometry checks basic pose
+consistency; uncertain predictions defer to the existing geometric recognizer.
+Other gestures keep their geometric rules. The model adds no Python dependency
+and is bundled in the release. See [model provenance and validation](docs/HAGRID.md).
 
 The physical camera is opened once. OBS reuses it for the foreground mask.
 Person segmentation runs during background effects. Detection uses reduced-size
@@ -285,6 +294,6 @@ Original HandSpark code, logo and rendering code: **MIT**, copyright Jeffrey
 Rijnsburger. See [LICENSE](LICENSE). Bundled third-party components retain their
 licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Built with OBS Studio, MediaPipe, Qt/PyQt5, NumPy, Pillow, FFmpeg and Noto Emoji.
+Built with OBS Studio, MediaPipe, HaGRID, OpenCV, Qt/PyQt5, NumPy, Pillow, FFmpeg and Noto Emoji.
 The idea started while exploring OpenEffects; this implementation uses its own
 Python/OBS pipeline. No OpenEffects GPL source is included.

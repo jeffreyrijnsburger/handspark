@@ -10,10 +10,10 @@ met beide handen laten lasers verschijnen. Kies **Teams Effects** als camera
 in Teams, Zoom of een andere video-app om de effecten in je gesprek te gebruiken.
 
 Het is een knipoog naar Apples videoreacties op de Mac. De gebaren volgen
-dezelfde indeling, met eigen animaties en herkenning via MediaPipe. Er zit geen
+dezelfde indeling, met eigen animaties en herkenning via MediaPipe en HaGRID. Er zit geen
 Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk project.
 
-**0.4.3 · MIT-licentie · Linux · Nederlands / Engels**
+**0.5.0 · MIT-licentie · Linux · Nederlands / Engels**
 
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -27,7 +27,7 @@ https://github.com/jeffreyrijnsburger/handspark/releases/latest
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.
 Modellen, effecten en Python-afhankelijkheden zitten erin. OBS 30.2 of nieuwer,
 Qt, FFmpeg en een werkende `v4l2loopback`-driver zijn systeemafhankelijkheden.
-Windows en macOS worden in 0.4.3 niet ondersteund.
+Windows en macOS worden in 0.5.0 niet ondersteund.
 
 Volg de installatieopdrachten in [README.md](README.md#install-the-release).
 Gebruik voor Ubuntu 24.04 OBS uit `noble-backports`. Open **HandSpark** uit het
@@ -47,6 +47,11 @@ Je microfoon blijft rechtstreeks in je video-app ingesteld.
 | ✌️✌️ Twee vredestekens (V) | <img src="icons/confetti.svg" width="24" height="24" alt=""> Confetti |
 | 👍👍 Twee duimen omhoog | <img src="icons/fireworks.svg" width="24" height="24" alt=""> Vuurwerk |
 | 🤘🤘 Metal horns met **beide** handen | <img src="icons/lasers.svg" width="24" height="24" alt=""> Lasers |
+
+Voor duim omhoog/omlaag gebruikt HandSpark ook een klein HaGRID-model dat de
+hand op het beeld beoordeelt. Dat ondersteunt natuurlijke houdingen naast de
+handpunten van MediaPipe. Het werkt lokaal en zit in de download; je hoeft er
+geen dataset voor te installeren. Zie [herkenning en validatie](docs/HAGRID.md).
 
 Houd je handen duidelijk in beeld en het gebaar ongeveer een seconde vast.
 Voor duim omhoog/omlaag krul je de andere vingers en wijs je de duim duidelijk

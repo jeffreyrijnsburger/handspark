@@ -35,7 +35,8 @@ Python 3.12; Ubuntu 24.04 amd64/X11 is the tested target. Windows and macOS
 camera backends are not implemented. Use a venv from `requirements.lock`.
 
 ```sh
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream -v
+.venv/bin/python tools/prepare_assets.py --models-only
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream test_hagrid -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
 ```
 
@@ -44,6 +45,10 @@ Merge settings through `settings.update_settings` so concurrent camera and
 language changes cannot overwrite each other. Never commit OBS credentials,
 settings, camera images, generated clips, model binaries or a Python venv.
 Models must match manifest checksums; clips are built from source.
+Prepare models with `.venv/bin/python tools/prepare_assets.py --models-only`
+for the real-model smoke test. The HaGRID model is a separately licensed asset;
+keep its provenance and license. `gesture_engine` reports image classification
+or geometric fallback; see `docs/HAGRID.md`.
 
 Version changes update `VERSION` and `CHANGELOG.md`; release tags are `v0.x.y`.
 Use semantic commits: `feat(scope): subject`, `fix(scope): subject`, etc.

@@ -37,7 +37,7 @@ def main():
         stage = Path(directory)
         app = stage / 'opt/handspark'
         app.mkdir(parents=True)
-        for pattern in ('*.py', '*.json', 'requirements.lock', 'VERSION', 'LICENSE', 'THIRD_PARTY_NOTICES.md', '*.task', '*.tflite'):
+        for pattern in ('*.py', '*.json', 'requirements.lock', 'VERSION', 'LICENSE', 'THIRD_PARTY_NOTICES.md', '*.task', '*.tflite', '*.onnx'):
             for source in BASE.glob(pattern):
                 if not source.name.startswith('test_'):
                     shutil.copy2(source, app / source.name)

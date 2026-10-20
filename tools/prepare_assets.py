@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download checksum-pinned MediaPipe models and render local reaction clips."""
+"""Download checksum-pinned recognition models and render local reaction clips."""
 import argparse
 import hashlib
 import json
@@ -13,7 +13,8 @@ BASE = Path(__file__).resolve().parent.parent
 
 def prepare_models():
     for manifest, name in (('model.json', 'hand_landmarker.task'),
-                           ('segmentation-model.json', 'selfie_segmenter_landscape.tflite')):
+                           ('segmentation-model.json', 'selfie_segmenter_landscape.tflite'),
+                           ('hagrid-model.json', 'hagrid_crops.onnx')):
         spec = json.loads((BASE / manifest).read_text())
         target = BASE / name
         if target.exists() and hashlib.sha256(target.read_bytes()).hexdigest() == spec['sha256']:

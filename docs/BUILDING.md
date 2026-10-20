@@ -29,12 +29,16 @@ Generated models, clips, venvs and user data are excluded from Git.
 
 ## Tests
 
+Prepare the pinned models to include the real ONNX smoke test.
+
 ```sh
-.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream -v
+.venv/bin/python tools/prepare_assets.py --models-only
+.venv/bin/python -m unittest test_gestures test_controls test_i18n test_bootstrap test_cli test_lasers test_reactions test_preview_stream test_hagrid -v
 QT_QPA_PLATFORM=offscreen /usr/bin/python3 -m unittest test_panel test_preview -v
 ```
 
-Unit tests cover gesture geometry, two-hand priority, duplicate rejection,
+Unit tests cover HaGRID preprocessing, confidence handling, fallback and model integrity,
+gesture geometry, two-hand priority, duplicate rejection,
 hold/release/cooldown, mask edges, private control IPC, language persistence,
 concurrent settings updates, fresh OBS bootstrap, CLI JSON and live UI translation.
 Hardware validation also needs a physical webcam, loopback device and OBS.
@@ -43,7 +47,7 @@ Hardware validation also needs a physical webcam, loopback device and OBS.
 
 ```sh
 python3 tools/build_deb.py
-dpkg-deb --info dist/handspark_0.4.3_ubuntu24.04_amd64.deb
+dpkg-deb --info dist/handspark_0.5.0_ubuntu24.04_amd64.deb
 (cd dist && sha256sum -c SHA256SUMS)
 ```
 

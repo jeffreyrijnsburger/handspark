@@ -158,6 +158,54 @@ class GestureTests(unittest.TestCase):
         self.assertEqual(reaction_anchor('thumbs_up', [mirrored])[0], 0.24)
         self.assertIsNone(reaction_anchor('fireworks', pair(thumbs_up())))
 
+    def test_image_evidence_recovers_an_ambiguous_finger_projection(self):
+        points = side_on_thumb()
+        points[8] = [0.60, 0.514]
+        self.assertIsNone(classify([points]))
+        self.assertEqual(classify([points], thumb_predictions=['up']), 'thumbs_up')
+        down = [[x, 1 - y] for x, y in points]
+        self.assertEqual(classify([down], thumb_predictions=['down']), 'thumbs_down')
+        self.assertIsNone(classify([points], thumb_predictions=[None]))
+
+    def test_image_thumb_evidence_rejects_open_hands_and_wrong_direction(self):
+        open_hand = hand((True, True, True, True))
+        self.assertIsNone(classify([open_hand], thumb_predictions=['up']))
+        self.assertIsNone(classify([thumbs_up()], thumb_predictions=['down']))
+        self.assertIsNone(classify([thumbs_up()], thumb_predictions=['other']))
+
+    def test_image_evidence_preserves_two_hand_priority_and_duplicate_rejection(self):
+        up = thumbs_up()
+        down = [[x, 1 - y] for x, y in up]
+        self.assertEqual(classify(pair(up), thumb_predictions=['up', 'up']), 'fireworks')
+        self.assertEqual(classify(pair(down), thumb_predictions=['down', 'down']), 'rain')
+        self.assertIsNone(classify([up, down], thumb_predictions=['up', 'down']))
+        self.assertEqual(classify([up, up], thumb_predictions=['up', 'up']), 'thumbs_up')
+
+    def test_image_evidence_stays_aligned_when_invalid_hands_are_removed(self):
+        self.assertEqual(classify([[], thumbs_up()], thumb_predictions=['other', 'up']), 'thumbs_up')
+        self.assertEqual(classify([thumbs_up(), []], thumb_predictions=['up', 'other']), 'thumbs_up')
+        for predictions in ([], ['up', 'up'], ['left']):
+            with self.assertRaisesRegex(ValueError, 'match'):
+                classify([thumbs_up()], thumb_predictions=predictions)
+
+    def test_other_gestures_keep_priority_over_image_thumb_evidence(self):
+        self.assertEqual(classify(heart_hands(), thumb_predictions=['up', 'up']), 'heart')
+        self.assertEqual(classify([salute()], thumb_predictions=['other']), 'prosper')
+        self.assertEqual(classify(pair(hand()), thumb_predictions=['up', 'up']), 'lasers')
+        peace = hand((True, True, False, False))
+        self.assertEqual(classify([peace], thumb_predictions=['up']), 'balloons')
+
+    def test_image_recovered_thumbs_use_their_camera_placement(self):
+        points = side_on_thumb()
+        points[8] = [0.60, 0.514]
+        aspect = 16 / 9
+        for mirror, expected_x in ((False, 0.76), (True, 0.24)):
+            hand_points = [[(1 - x if mirror else x) * aspect, y] for x, y in points]
+            self.assertIsNone(reaction_anchor('thumbs_up', [hand_points], aspect))
+            anchor = reaction_anchor('thumbs_up', [hand_points], aspect, thumb_predictions=['up'])
+            self.assertAlmostEqual(anchor[0], expected_x)
+            self.assertGreaterEqual(anchor[1], .32)
+
     def test_thumbs_up_and_mirrored_hand(self):
         points = thumbs_up()
         self.assertTrue(is_thumbs_up(points))

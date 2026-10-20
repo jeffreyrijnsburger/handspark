@@ -29,11 +29,13 @@ Reaction IDs are stable across languages:
 
 An online status includes `automatic`, `depth`, `reaction` (ID or null),
 `candidate`, `progress` (0–1), `hands`, `cooldown` (seconds), `needs_release`,
-`remaining` (seconds), `mask_frames`, `error` and `error_code`.
+`remaining` (seconds), `mask_frames`, `gesture_engine`, `error` and `error_code`.
+`gesture_engine` is `hagrid+geometry` when the image classifier is available,
+or `geometry` when it falls back. This does not change the reaction IDs.
 No image, OBS password or user path is returned. A successful command exits 0.
 Preview configuration JSON includes `preview_resolution` (height in pixels) and
-`preview_fps`. Defaults are 360 and 30. These affect the panel's direct virtual
-camera reader and never restart or reconfigure the meeting camera.
+`preview_fps`. Defaults are 360 and 30. These affect the panel's independent composed-preview
+feed and never restart or reconfigure the meeting camera.
 `output --json` returns saved `output_resolution`, fixed `output_fps: 30` and
 `applies_on_next_start: true`. Saving does not start or restart a camera; use
 `restart` explicitly when ready. Default output is 360p. Online status includes
@@ -43,7 +45,7 @@ Invalid syntax exits 2; general operational failures exit 1.
 An offline JSON status exits 3:
 
 ```json
-{"schema_version":1,"version":"0.4.3","ok":false,"error_code":"camera_offline"}
+{"schema_version":1,"version":"0.5.0","ok":false,"error_code":"camera_offline"}
 ```
 
 `status`, `list`, `commands`, `--version` and reading `language`, `preview` or
