@@ -13,7 +13,7 @@ Het is een knipoog naar Apples videoreacties op de Mac. De gebaren volgen
 dezelfde indeling, met eigen animaties en herkenning via MediaPipe. Er zit geen
 Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk project.
 
-**0.3.0 · MIT-licentie · Linux · Nederlands / Engels**
+**0.3.1 · MIT-licentie · Linux · Nederlands / Engels**
 
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -27,7 +27,7 @@ https://github.com/jeffreyrijnsburger/handspark/releases/latest
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.
 Modellen, effecten en Python-afhankelijkheden zitten erin. OBS 30.2 of nieuwer,
 Qt, FFmpeg en een werkende `v4l2loopback`-driver zijn systeemafhankelijkheden.
-Windows en macOS worden in 0.3.0 niet ondersteund.
+Windows en macOS worden in 0.3.1 niet ondersteund.
 
 Volg de installatieopdrachten in [README.md](README.md#install-the-release).
 Gebruik voor Ubuntu 24.04 OBS uit `noble-backports`. Open **HandSpark** uit het
@@ -39,14 +39,14 @@ Je microfoon blijft rechtstreeks in je video-app ingesteld.
 
 | Gebaar | Effect |
 | --- | --- |
-| Hartje maken met twee handen | Hartjes |
-| Eén vredesteken (V) | Ballonnen |
-| Eén duim omhoog | Duimpje omhoog |
-| Eén duim omlaag | Duimpje omlaag |
-| Twee duimen omlaag | Regen |
-| Twee vredestekens | Confetti |
-| Twee duimen omhoog | Vuurwerk |
-| Metal horns met **beide** handen | Lasers |
+| 🫶 Hartje maken met twee handen | <img src="icons/heart.svg" width="24" height="24" alt=""> Hartjes |
+| ✌️ Eén vredesteken (V) | <img src="icons/balloons.svg" width="24" height="24" alt=""> Ballonnen |
+| 👍 Eén duim omhoog | <img src="emoji/emoji_u1f44d.png" width="24" height="24" alt=""> Duimpje omhoog |
+| 👎 Eén duim omlaag | <img src="emoji/emoji_u1f44e.png" width="24" height="24" alt=""> Duimpje omlaag |
+| 👎👎 Twee duimen omlaag | <img src="icons/rain.svg" width="24" height="24" alt=""> Regen en bliksem |
+| ✌️✌️ Twee vredestekens (V) | <img src="icons/confetti.svg" width="24" height="24" alt=""> Confetti |
+| 👍👍 Twee duimen omhoog | <img src="icons/fireworks.svg" width="24" height="24" alt=""> Vuurwerk |
+| 🤘🤘 Metal horns met **beide** handen | <img src="icons/lasers.svg" width="24" height="24" alt=""> Lasers |
 
 Houd je handen duidelijk in beeld en het gebaar ongeveer een seconde vast.
 Sluit bij duimen omhoog/omlaag je andere vingers en strek je duim volledig.

@@ -1,4 +1,10 @@
-HandSpark 0.3.0 adds lighter camera output and improves reactions.
+HandSpark 0.3.1 makes the gesture overview easier to scan.
+
+- Every gesture has a hand symbol and every reaction has its actual app icon in the English and Dutch README.
+- Two thumbs show 👍👍 / 👎👎, two peace signs show ✌️✌️, and two metal horns show 🤘🤘. 🫶 already depicts both hands forming a heart.
+- The rain reaction is labeled with its lightning effect.
+
+This documentation update includes all 0.3.0 features:
 
 - The composed preview leaves the virtual-camera capture stream available for meeting clients, including loopback drivers with exclusive capture.
 - Camera output defaults to 360p / 30 fps. Choose 360p, 540p or 720p in the native panel, independently of preview resolution. Changing output briefly restarts the camera.
