@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0 — 2026-10-20
+
+- Keep the virtual-camera capture stream free for meeting clients by reading
+  composed previews over a separate connection; preserve configurable FPS.
+- Use app-neutral labels and document camera selection for Teams and Zoom.
+- Default camera output to 360p / 30 fps; offer independent 360p/540p/720p
+  output controls and an offline CLI setting with explicit restart.
+- Apply output changes through the stopped OBS profile, retaining scene alignment.
+- Give thumbs-up/down bubbles glass rims, shaded finger contours and a soft pop.
+- Require a straight, fully extended thumb beyond folded fingers to reduce
+  accidental reactions, including their two-hand variants.
+- Preserve tilted and mirrored deliberate thumbs up/down.
+- Add two branching lightning strikes with a localized glow and cloud illumination.
+- Keep the whole rain cloud and its soft shadow inside the animation.
+- Render a softly lit volumetric storm cloud and layered, wind-swept rainfall
+  beneath it. Cloud rendering happens during asset preparation, not live video.
+
 ## 0.2.0 — 2026-10-20
 
 - Replace the roughly 2-fps screenshot preview with a live feed of the actual

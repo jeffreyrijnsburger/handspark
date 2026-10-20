@@ -103,6 +103,31 @@ class PanelLanguageTests(unittest.TestCase):
         self.assertEqual(self.widget.fps_choice.currentData(), 30)
         self.assertIn('niet worden opgeslagen', self.widget.feedback.text())
 
+    def test_output_saves_offline_without_changing_preview_or_language(self):
+        with patch.object(self.widget.process, 'start') as start:
+            self.widget.output_choice.setCurrentIndex(self.widget.output_choice.findData(720))
+            start.assert_not_called()
+        values = settings.load_settings()
+        self.assertEqual(values['output_resolution'], 720)
+        self.assertEqual(values['preview_resolution'], 360)
+        self.assertEqual(values['language'], 'nl')
+
+    def test_online_output_change_restarts_camera_and_preserves_preferences(self):
+        self.widget.apply_status({'automatic': True, 'depth': True})
+        with patch.object(self.widget.process, 'start') as start:
+            self.widget.output_choice.setCurrentIndex(self.widget.output_choice.findData(540))
+            self.assertEqual(start.call_args.args[1][-1], 'restart')
+        self.assertEqual(settings.load_settings()['output_resolution'], 540)
+        self.assertFalse(self.widget.output_choice.isEnabled())
+        self.widget.process_finished(0, QtCore.QProcess.NormalExit)
+        self.assertTrue(self.widget.output_choice.isEnabled())
+
+    def test_failed_output_save_restores_previous_choice(self):
+        with patch.object(panel, 'update_settings', side_effect=PermissionError('read-only')):
+            self.widget.output_choice.setCurrentIndex(self.widget.output_choice.findData(720))
+        self.assertEqual(self.widget.output_choice.currentData(), 360)
+        self.assertIn('niet worden opgeslagen', self.widget.feedback.text())
+
     def test_status_poll_never_requests_screenshot_previews(self):
         with patch.object(panel, 'request', return_value={'automatic': True, 'depth': True}) as request:
             self.widget.poll()
@@ -118,6 +143,7 @@ class PanelLanguageTests(unittest.TestCase):
                 self.app.processEvents()
                 self.assertEqual(self.widget.width(), width)
                 for control in (self.widget.language_choice, self.widget.resolution_choice, self.widget.fps_choice,
+                                self.widget.output_choice,
                                 self.widget.camera, self.widget.cancel,
                                 *self.widget.buttons.values()):
                     position = control.mapTo(self.widget, QtCore.QPoint())

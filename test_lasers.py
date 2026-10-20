@@ -29,7 +29,7 @@ class LaserTests(unittest.TestCase):
         self.assertTrue(np.array_equal(first, np.asarray(LaserShow().frame(1.1))), 'renders are deterministic')
 
     def test_updated_laser_source_invalidates_previously_rendered_clips(self):
-        names = ('render_reactions.py', 'laser_show.py', 'reactions.py',
+        names = ('render_reactions.py', 'laser_show.py', 'rain_cloud.py', 'reactions.py',
                  'emoji/emoji_u1f44d.png', 'emoji/emoji_u1f44e.png')
         with tempfile.TemporaryDirectory() as folder:
             base = Path(folder)
@@ -39,8 +39,10 @@ class LaserTests(unittest.TestCase):
                 path.write_bytes(b'original')
             with patch.object(render_reactions, 'BASE', base):
                 old = render_reactions.asset_signature()
-                (base / 'laser_show.py').write_bytes(b'new laser choreography')
-                self.assertNotEqual(old, render_reactions.asset_signature())
+                for source in ('laser_show.py', 'rain_cloud.py'):
+                    (base / source).write_bytes(b'new effect source')
+                    self.assertNotEqual(old, render_reactions.asset_signature())
+                    (base / source).write_bytes(b'original')
 
 
 if __name__ == '__main__':

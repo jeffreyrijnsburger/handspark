@@ -1,4 +1,6 @@
 """Set up this user's dedicated OBS profile and camera service, without root."""
+import configparser
+import io
 import json
 import os
 from pathlib import Path
@@ -6,6 +8,8 @@ import secrets
 import shutil
 import subprocess
 import tempfile
+
+from settings import load_settings
 
 
 def private_write(path, text):
@@ -85,6 +89,28 @@ Environment=PYTHONUNBUFFERED=1
 Restart=on-failure
 RestartSec=2
 '''
+
+
+def configure_video():
+    """Apply saved output size only while OBS is stopped; keep scene coordinates."""
+    height = load_settings()['output_resolution']
+    path = Path.home() / '.config/obs-studio/basic/profiles/Teams_Effects/basic.ini'
+    profile = configparser.ConfigParser(interpolation=None)
+    profile.optionxform = str
+    profile.read(path)
+    desired = {'BaseCX': '1280', 'BaseCY': '720', 'OutputCX': str(height * 16 // 9),
+               'OutputCY': str(height), 'FPSType': '0', 'FPSCommon': '30'}
+    if all(profile.get('Video', key, fallback=None) == value for key, value in desired.items()):
+        return
+    if subprocess.run(['pgrep', '-x', 'obs'], stdout=subprocess.DEVNULL).returncode == 0:
+        raise RuntimeError('Close OBS before changing camera output / Sluit OBS voor het wijzigen van de camera-uitvoer.')
+    if not profile.has_section('Video'):
+        profile.add_section('Video')
+    for key, value in desired.items():
+        profile.set('Video', key, value)
+    stream = io.StringIO()
+    profile.write(stream, space_around_delimiters=False)
+    private_write(path, stream.getvalue())
 
 
 def ensure_setup(base):

@@ -7,13 +7,13 @@
 HandSpark voegt acht gebarenreacties toe aan je Linux-webcam. Een hartje met
 twee handen geeft hartjes; twee duimen omhoog geven vuurwerk; metal horns
 met beide handen laten lasers verschijnen. Kies **Teams Effects** als camera
-in Teams om de effecten in je gesprek te gebruiken.
+in Teams, Zoom of een andere video-app om de effecten in je gesprek te gebruiken.
 
 Het is een knipoog naar Apples videoreacties op de Mac. De gebaren volgen
 dezelfde indeling, met eigen animaties en herkenning via MediaPipe. Er zit geen
 Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk project.
 
-**0.2.0 · MIT-licentie · Linux · Nederlands / Engels**
+**0.3.0 · MIT-licentie · Linux · Nederlands / Engels**
 
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -27,12 +27,13 @@ https://github.com/jeffreyrijnsburger/handspark/releases/latest
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.
 Modellen, effecten en Python-afhankelijkheden zitten erin. OBS 30.2 of nieuwer,
 Qt, FFmpeg en een werkende `v4l2loopback`-driver zijn systeemafhankelijkheden.
-Windows en macOS worden in 0.2.0 niet ondersteund.
+Windows en macOS worden in 0.3.0 niet ondersteund.
 
 Volg de installatieopdrachten in [README.md](README.md#install-the-release).
 Gebruik voor Ubuntu 24.04 OBS uit `noble-backports`. Open **HandSpark** uit het
 toepassingenmenu en kies in Teams **Instellingen → Apparaten → Camera → Teams Effects**.
-Je microfoon blijft rechtstreeks in Teams ingesteld.
+In Zoom kies je **Instellingen → Video → Camera → Teams Effects**.
+Je microfoon blijft rechtstreeks in je video-app ingesteld.
 
 ## Gebaren
 
@@ -48,16 +49,35 @@ Je microfoon blijft rechtstreeks in Teams ingesteld.
 | Metal horns met **beide** handen | Lasers |
 
 Houd je handen duidelijk in beeld en het gebaar ongeveer een seconde vast.
+Sluit bij duimen omhoog/omlaag je andere vingers en strek je duim volledig.
 De animaties duren vijf seconden. Tussen reacties zit zes seconden pauze.
 Laat hetzelfde gebaar los voordat je het herhaalt.
 Lasers, vuurwerk, ballonnen en confetti verschijnen achter je lichaam.
+
+De regenreactie heeft een belichte wolk, vallende druppels en twee vertakte
+bliksemflitsen. De duimreacties verschijnen in glanzende bubbels.
+
+## Camera-uitvoer
+
+Bij **Camera-uitvoer** kies je 360p, 540p of 720p, altijd met 30 fps.
+De standaard is **360p / 30 fps**; dit is het beeld dat de virtuele camera
+aan je video-app levert. Wijzigen herstart de camera kort. Doe dit voor een gesprek.
+Teams bepaalt daarna zelf de verzendkwaliteit; minder vertraging is niet gegarandeerd.
+
+De instelling **Voorbeeld** geldt alleen voor het venster. Met de CLI:
+
+```sh
+handspark output --resolution 360
+handspark restart
+handspark output --json
+```
 
 ## Bedienen en taal
 
 Het livevoorbeeld toont maximaal 30 fps. Onder **Voorbeeld** kies je **360p,
 540p of 720p** en **15, 24 of 30 fps**. Standaard staat het op 360p/30 fps.
 De keuze wordt direct toegepast en onthouden. Hiermee verander je het
-voorbeeldvenster; de camerauitvoer voor je gesprek blijft 720p/30 fps.
+voorbeeldvenster; de aparte instelling hierboven bepaalt de uitvoer voor je gesprek.
 
 In het venster zie je het uiteindelijke camerabeeld en acht reactieknoppen.
 **Automatische reacties** pauzeert de gebarenherkenning.

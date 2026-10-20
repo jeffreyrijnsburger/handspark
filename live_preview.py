@@ -1,5 +1,4 @@
-"""Read the actual virtual camera into Qt without OBS screenshots or disk frames."""
-import os
+"""Read composed video into Qt without reserving the meeting camera device."""
 from pathlib import Path
 
 from PyQt5 import QtCore
@@ -7,30 +6,14 @@ from PyQt5 import QtCore
 from settings import PREVIEW_FPS, PREVIEW_RESOLUTIONS
 
 
-def virtual_camera():
-    override = os.environ.get('HANDSPARK_PREVIEW_DEVICE')
-    if override:
-        return override
-    for entry in sorted(Path('/sys/class/video4linux').glob('video*')):
-        try:
-            if entry.joinpath('name').read_text().strip() in ('Teams Effects', 'OBS Virtual Camera'):
-                return '/dev/' + entry.name
-        except OSError:
-            continue
-    return '/dev/video42'
-
-
-def ffmpeg_arguments(device, resolution, fps):
+def preview_command(resolution, fps):
     if type(resolution) is not int or resolution not in PREVIEW_RESOLUTIONS:
         raise ValueError('Unsupported preview resolution')
     if type(fps) is not int or fps not in PREVIEW_FPS:
         raise ValueError('Unsupported preview frame rate')
-    width = resolution * 16 // 9
-    return ['-nostdin', '-hide_banner', '-loglevel', 'error', '-fflags', 'nobuffer',
-            '-f', 'v4l2', '-i', device, '-an',
-            '-vf', f'scale={width}:{resolution}:flags=fast_bilinear,fps={fps}',
-            '-c:v', 'mjpeg', '-q:v', '5', '-threads', '1',
-            '-f', 'image2pipe', '-flush_packets', '1', 'pipe:1']
+    base = Path(__file__).resolve().parent
+    return (str(base / '.venv/bin/python'),
+            [str(base / 'preview_stream.py'), '--resolution', str(resolution), '--fps', str(fps)])
 
 
 class JpegFrames:
@@ -78,7 +61,7 @@ class LivePreview(QtCore.QObject):
         self.decoder = JpegFrames()
 
     def configure(self, resolution, fps):
-        ffmpeg_arguments('/dev/video42', resolution, fps)  # Validate before changing a running reader.
+        preview_command(resolution, fps)  # Validate before changing a running reader.
         options = (resolution, fps)
         if options == self.options:
             return
@@ -99,7 +82,8 @@ class LivePreview(QtCore.QObject):
             return
         self.decoder = JpegFrames()
         self.running_options = self.options
-        self.process.start('ffmpeg', ffmpeg_arguments(virtual_camera(), *self.options))
+        program, arguments = preview_command(*self.options)
+        self.process.start(program, arguments)
 
     def receive(self):
         data = bytes(self.process.readAllStandardOutput())

@@ -30,13 +30,30 @@ def _thumb_direction(points):
         return None
     if not all(_curled(points, pip, tip) for pip, tip in ((6, 8), (10, 12), (14, 16), (18, 20))):
         return None
-    scale = _distance(points[5], points[17])
+    if not _finger_pattern(points, (False, False, False, False)):
+        return None
+    # Palm length keeps the thresholds meaningful when the fist is side-on
+    # and its knuckle span is shortened by perspective.
+    scale = max(_distance(points[5], points[17]), _distance(points[0], points[9]) * 0.65)
     if (_distance(points[4], points[0]) <= _distance(points[3], points[0]) * 1.05
             or _distance(points[4], points[5]) < scale * 0.5):
         return None
     dx = points[4][0] - points[2][0]
     dy = points[4][1] - points[2][1]
-    if abs(dy) <= 0.4 * scale or abs(dy) <= abs(dx) * 0.85:
+    if abs(dy) <= 0.75 * scale or abs(dy) <= abs(dx) * 1.1:
+        return None
+    # A deliberate thumb is straight at its interphalangeal joint and clearly
+    # projects beyond the folded fingers, rather than just pointing upward.
+    proximal = [points[3][c] - points[2][c] for c in (0, 1)]
+    distal = [points[4][c] - points[3][c] for c in (0, 1)]
+    lengths = math.hypot(*proximal), math.hypot(*distal)
+    if min(lengths) < scale * 0.12:
+        return None
+    if sum(a * b for a, b in zip(proximal, distal)) < 0.8 * lengths[0] * lengths[1]:
+        return None
+    clearance = min((points[4][0] - point[0]) * dx
+                    + (points[4][1] - point[1]) * dy for point in points[5:])
+    if clearance < 0.22 * scale * math.hypot(dx, dy):
         return None
     return 'up' if dy < 0 else 'down'
 

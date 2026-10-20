@@ -63,6 +63,20 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.call('preview', '--fps', '60').returncode, 2)
         self.assertEqual(self.call('start', '--fps', '30').returncode, 2)
 
+    def test_output_configuration_is_saved_without_starting_or_restarting_a_camera(self):
+        default = json.loads(self.call('output', '--json').stdout)
+        self.assertEqual((default['output_resolution'], default['output_fps']), (360, 30))
+        self.assertFalse((Path(self.folder.name) / '.config').exists())
+        self.call('language', 'nl')
+        result = self.call('output', '--resolution', '540', '--json')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['output_resolution'], 540)
+        self.assertTrue(json.loads(result.stdout)['applies_on_next_start'])
+        self.assertEqual(json.loads(self.call('language', '--json').stdout)['language'], 'nl')
+        self.assertEqual(json.loads(self.call('preview', '--json').stdout)['preview_resolution'], 360)
+        self.assertEqual(self.call('output', '--fps', '15').returncode, 2)
+        self.assertEqual(self.call('output', '--resolution', '1080').returncode, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

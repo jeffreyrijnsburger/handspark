@@ -26,7 +26,7 @@ PALETTE = [(255, 75, 115), (50, 185, 255), (255, 205, 65),
 
 def asset_signature():
     digest = hashlib.sha256()
-    for name in ('render_reactions.py', 'laser_show.py', 'reactions.py',
+    for name in ('render_reactions.py', 'laser_show.py', 'rain_cloud.py', 'reactions.py',
                  'emoji/emoji_u1f44d.png', 'emoji/emoji_u1f44e.png'):
         digest.update((BASE / name).read_bytes())
     return digest.hexdigest()
@@ -107,39 +107,61 @@ class Renderer:
                 self.bursts.append((x * WIDTH, y * HEIGHT, spawn, colors[i], sparks))
         elif reaction == 'rain':
             self.cloud = self.make_cloud()
+            self.bolts = (
+                (1.2, ((290, 132), (267, 207), (302, 195), (254, 282), (284, 267), (232, 405)),
+                 ((267, 207), (226, 239), (238, 256), (197, 297))),
+                (3.25, ((633, 136), (609, 213), (646, 198), (599, 285), (630, 271), (584, 413)),
+                 ((599, 285), (654, 308), (647, 329), (691, 359))),
+            )
             self.particles = [(self.rng.uniform(0.18, 0.82) * WIDTH,
                                self.rng.uniform(0, HEIGHT), self.rng.uniform(450, 750),
-                               self.rng.uniform(8, 22)) for _ in range(180)]
+                               self.rng.uniform(8, 24), self.rng.random()) for _ in range(180)]
         elif reaction == 'lasers':
             from laser_show import LaserShow
             self.laser_show = LaserShow(WIDTH, HEIGHT, DURATION)
 
     def make_bubble(self, reaction):
-        size = 208
+        size = 256
         bubble = Image.new('RGBA', (size, size))
-        shaded = shaded_shape('balloon', (175, 182, 196), 182)
-        shaded.putalpha(shaded.getchannel('A').point(lambda a: round(a * 0.83)))
-        bubble.alpha_composite(shaded, (24, 1))
-        draw = ImageDraw.Draw(bubble)
-        draw.ellipse((32, 5, 201, 169), outline=(245, 248, 255, 170), width=2)
-        draw.ellipse((13, 165, 41, 193), fill=(174, 182, 197, 185), outline=(250, 250, 255, 120), width=2)
-        draw.ellipse((2, 192, 15, 205), fill=(174, 182, 197, 155))
+        mask = Image.new('L', (size * 2, size * 2))
+        ImageDraw.Draw(mask).ellipse((88, 40, 472, 424), fill=255)
+        mask = mask.resize((size, size), Image.Resampling.LANCZOS)
+        yy, xx = np.mgrid[:size, :size].astype(np.float32)
+        dome = np.sqrt(np.maximum(0, 1 - ((xx - 140) / 96) ** 2 - ((yy - 116) / 96) ** 2))
+        shine = np.exp(-((xx - 98) / 42) ** 2 - ((yy - 58) / 35) ** 2)
+        tint = (87, 153, 208) if reaction == 'thumbs_up' else (133, 130, 201)
+        rgba = np.zeros((size, size, 4), dtype=np.uint8)
+        for channel, tone in enumerate(tint):
+            rgba[:, :, channel] = np.clip(tone * (0.55 + 0.45 * dome) + shine * 115, 0, 255)
+        rgba[:, :, 3] = np.asarray(mask) * (0.6 + shine * 0.15)
+        shadow = Image.new('RGBA', bubble.size, (12, 25, 46, 0))
+        shadow.putalpha(mask.filter(ImageFilter.GaussianBlur(5)).point(lambda a: round(a * 0.2)))
+        bubble.alpha_composite(shadow, (0, 4))
+        bubble.alpha_composite(Image.fromarray(rgba))
+        details = Image.new('RGBA', (size * 2, size * 2))
+        draw = ImageDraw.Draw(details)
+        draw.ellipse((88, 40, 472, 424), outline=(217, 237, 255, 185), width=3)
+        draw.arc((95, 47, 465, 417), 196, 282, fill=(245, 251, 255, 225), width=5)
+        draw.arc((96, 48, 464, 416), 25, 82, fill=(167, 214, 255, 120), width=3)
+        draw.ellipse((62, 414, 114, 466), fill=(*tint, 160), outline=(218, 239, 255, 175), width=2)
+        draw.ellipse((34, 474, 58, 498), fill=(*tint, 140), outline=(220, 240, 255, 130), width=2)
+        bubble.alpha_composite(details.resize(bubble.size, Image.Resampling.LANCZOS))
         name = 'emoji_u1f44d.png' if reaction == 'thumbs_up' else 'emoji_u1f44e.png'
-        hand = Image.open(BASE / 'emoji' / name).convert('RGBA').resize((114, 114), Image.Resampling.LANCZOS)
-        white = Image.new('RGBA', hand.size, (255, 255, 255))
-        white.putalpha(hand.getchannel('A'))
-        bubble.alpha_composite(white, (55, 32))
-        return bubble
+        hand = Image.open(BASE / 'emoji' / name).convert('RGBA').resize((130, 130), Image.Resampling.LANCZOS)
+        # Retain the artwork's finger contours as a softly shaded silver hand.
+        luminance = np.asarray(hand.convert('L'), dtype=np.float32)
+        silver = np.asarray(hand).copy()
+        for channel, (base, strength) in enumerate(((184, 0.26), (195, 0.23), (211, 0.17))):
+            silver[:, :, channel] = np.clip(base + luminance * strength, 0, 255)
+        hand_shadow = Image.new('RGBA', hand.size, (19, 35, 57, 0))
+        hand_shadow.putalpha(hand.getchannel('A').filter(ImageFilter.GaussianBlur(2)).point(lambda a: round(a * 0.4)))
+        bubble.alpha_composite(hand_shadow, (75, 57))
+        bubble.alpha_composite(Image.fromarray(silver), (75, 51))
+        return bubble.resize((240, 240), Image.Resampling.LANCZOS)
 
     def make_cloud(self):
-        cloud = Image.new('RGBA', (620, 155))
-        draw = ImageDraw.Draw(cloud)
-        for i in range(12):
-            x = 30 + i * 46
-            y = 18 + 13 * math.sin(i * 1.8)
-            draw.ellipse((x - 45, y, x + 72, y + 110), fill=(121, 130, 145, 205))
-        draw.rounded_rectangle((30, 65, 590, 125), radius=35, fill=(115, 123, 137, 210))
-        return cloud.filter(ImageFilter.GaussianBlur(7))
+        from rain_cloud import make_cloud
+        return make_cloud()
 
     def frame(self, t):
         method = getattr(self, self.reaction)
@@ -169,10 +191,11 @@ class Renderer:
     def thumb_frame(self, t):
         frame = Image.new('RGBA', (WIDTH, HEIGHT))
         pop = min(1.0, max(0, t / 0.45))
-        scale = 1 - (1 - pop) ** 3
+        scale = (1 - (1 - pop) ** 3) * (1 + 0.07 * math.sin(t * 11) * math.exp(-t * 3))
         side = max(1, round(self.bubble.width * scale))
         image = opacity(self.bubble.resize((side, side), Image.Resampling.LANCZOS), envelope(t))
-        frame.alpha_composite(image, (round(WIDTH / 2 - side / 2), round(HEIGHT / 2 - side / 2)))
+        frame.alpha_composite(image, (round(WIDTH / 2 - side / 2),
+                                      round(HEIGHT / 2 - side / 2 + 2 * math.sin(t * 2))))
         return frame
 
     def balloons(self, t):
@@ -246,12 +269,47 @@ class Renderer:
     def rain(self, t):
         fade = envelope(t)
         frame = Image.new('RGBA', (WIDTH, HEIGHT), (15, 23, 38, round(28 * fade)))
-        frame.alpha_composite(opacity(self.cloud, fade), (round((WIDTH - self.cloud.width) / 2), 0))
+        cloud_x = round((WIDTH - self.cloud.width) / 2 + 3 * math.sin(t * 0.7))
+        cloud_y = round(6 + 2 * math.sin(t * 1.1))
         draw = ImageDraw.Draw(frame)
-        for x, offset, speed, length in self.particles:
-            y = 90 + (offset + t * speed) % (HEIGHT - 70)
-            dx = -length * 0.16
-            draw.line((x, y, x + dx, y + length), fill=(195, 215, 239, round(115 * fade)), width=1)
+        top = cloud_y + 135
+        wind = 5 * math.sin(t * 1.3)
+        for x, offset, speed, length, depth in self.particles:
+            y = top + (offset + t * speed) % (HEIGHT + 30 - top)
+            dx = -length * 0.18
+            draw.line((x + wind, y, x + wind + dx, y + length),
+                      fill=(185, 210, 242, round((75 + 105 * depth) * fade)),
+                      width=1 if depth < 0.65 else 2)
+        lightning = Image.new('RGBA', frame.size)
+        strike = ImageDraw.Draw(lightning)
+        flashes = []
+        for spawn, path, branch in self.bolts:
+            age = (t - spawn) / 0.36
+            strength = math.sin(age * math.pi) ** 2 if 0 < age < 1 else 0
+            flashes.append(strength)
+            if strength <= 0:
+                continue
+            a = strength * fade
+            strike.line(path, fill=(88, 160, 255, round(210 * a)), width=9, joint='curve')
+            strike.line(branch, fill=(111, 180, 255, round(190 * a)), width=5, joint='curve')
+        flash = max(flashes, default=0)
+        if flash:
+            frame = Image.alpha_composite(frame, lightning.filter(ImageFilter.GaussianBlur(8)))
+            for spawn, path, branch in self.bolts:
+                age = (t - spawn) / 0.36
+                if 0 < age < 1:
+                    a = math.sin(age * math.pi) ** 2 * fade
+                    strike.line(path, fill=(234, 246, 255, round(255 * a)), width=3, joint='curve')
+                    strike.line(branch, fill=(215, 236, 255, round(235 * a)), width=2, joint='curve')
+            frame = Image.alpha_composite(frame, lightning)
+        # The cloud covers the rain's spawn points instead of drops crossing
+        # its surface. The complete padded sprite stays inside the video.
+        cloud = self.cloud
+        if flash:
+            illuminated = Image.new('RGBA', cloud.size, (206, 226, 255))
+            illuminated.putalpha(cloud.getchannel('A'))
+            cloud = Image.blend(cloud, illuminated, flash * 0.42)
+        frame.alpha_composite(opacity(cloud, fade), (cloud_x, cloud_y))
         return frame
 
     def lasers(self, t):

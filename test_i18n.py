@@ -39,7 +39,8 @@ class PreferenceTests(unittest.TestCase):
 
     def test_invalid_changes_never_overwrite_preferences(self):
         settings.update_settings(language='en')
-        for change in ({'language': 'fr'}, {'language': []}, {'depth': 'false'}, {'unknown': True}):
+        for change in ({'language': 'fr'}, {'language': []}, {'depth': 'false'}, {'unknown': True},
+                       {'output_resolution': True}, {'output_resolution': 1080}):
             with self.assertRaises(ValueError):
                 settings.update_settings(**change)
         self.assertEqual(settings.load_settings()['language'], 'en')
