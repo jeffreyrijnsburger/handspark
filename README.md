@@ -14,7 +14,7 @@ gesture mappings and independently written animations. No Apple software or
 proprietary effects are included. This is a community project, unaffiliated with
 Apple, Microsoft, Zoom or OBS.
 
-**Version 0.5.0 · MIT · Linux · Dutch / English**
+**Version 0.6.0 · MIT · Linux · Dutch / English**
 
 Latest ready-to-install build:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -40,6 +40,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 - Local inference. No account, cloud processing, API key or telemetry.
 - A documented CLI with JSON output for scripts and AI agents.
 - A desktop launcher and matching HandSpark taskbar icon.
+- An optional system tray menu and saved choices for the window's close button.
 
 ![Actual golden thumbs-up animation on a synthetic background](docs/thumbs-up-preview.gif)
 
@@ -53,7 +54,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 | --- | --- |
 | Ubuntu 24.04, amd64, KDE/X11, Python 3.12 | Tested target; `.deb` available |
 | Other Linux distributions / Wayland | May work from source; untested |
-| Windows / macOS | Not supported in 0.5.0 |
+| Windows / macOS | Not supported in 0.6.0 |
 
 The current implementation uses OBS Studio, V4L2 loopback and a systemd user
 service. Recognition and rendering could be reused for other platforms, but
@@ -70,14 +71,14 @@ checksum-pinned models and rendered animations. You do **not** need to clone
 the repository, install pip packages or render effects to use that build.
 System OBS, Qt, FFmpeg and a working V4L2 loopback driver are still required.
 
-1. Download `handspark_0.5.0_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
+1. Download `handspark_0.6.0_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
 2. From that download folder:
 
    ```sh
    sha256sum -c SHA256SUMS
    sudo apt update
    sudo apt install -t noble-backports obs-studio
-   sudo apt install ./handspark_0.5.0_ubuntu24.04_amd64.deb
+   sudo apt install ./handspark_0.6.0_ubuntu24.04_amd64.deb
    ```
 
    OBS 30.2 or newer is required. Ubuntu 24.04's original OBS 30.0 package can
@@ -184,9 +185,31 @@ gesture detection while leaving manual buttons available. **Effects behind me**
 toggles body segmentation. **Stop effect** clears the current animation.
 
 **Turn camera off** stops HandSpark’s camera feed, virtual camera and reactions
-for your video app. **Turn camera on** enables them again. Closing the window
-leaves the camera running, even outside a call. You can also use
-`handspark stop` to turn it off.
+for your video app. **Turn camera on** enables them again.
+
+**When closing (×)** is saved and offers three choices:
+
+- **Stop camera and OBS** (default): stop video and reactions, then quit OBS if
+  HandSpark started it. An OBS instance you started separately stays open.
+- **Keep camera on**: close HandSpark's window and leave video running. Reopen
+  HandSpark or run `handspark stop` to stop it.
+- **Hide in system tray**: keep HandSpark available through its icon beside the
+  clock, with camera and reactions active. The hidden preview pauses to save CPU.
+
+**Show system tray icon** is optional and enabled by default where supported.
+Its menu offers **Open HandSpark**, camera on/off and **Quit**. **Quit** always
+stops the camera and the OBS started by HandSpark, regardless of the × setting.
+Disabling the icon resets hide-on-close to stop; when a tray is unavailable,
+hide-on-close safely falls back to stopping. After an OBS failure, start the
+camera again explicitly; it does not reopen automatically.
+
+```sh
+handspark on-close stop
+handspark on-close background
+handspark on-close tray
+handspark tray off
+handspark on-close --json
+```
 
 Choose **Nederlands** or **English** at the bottom of the panel. It updates
 immediately, without restarting the camera, and works even with the camera off.
@@ -200,7 +223,7 @@ handspark language nl
 Preferences are in `~/.config/teams-effects/settings.json`:
 
 ```json
-{"automatic": true, "depth": true, "language": "en", "preview_resolution": 360, "preview_fps": 30, "output_resolution": 360}
+{"automatic": true, "depth": true, "language": "en", "preview_resolution": 360, "preview_fps": 30, "output_resolution": 360, "close_action": "stop", "tray_enabled": true}
 ```
 
 Existing Dutch preferences are preserved when updating.

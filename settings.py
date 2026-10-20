@@ -7,8 +7,10 @@ import tempfile
 
 SETTINGS_PATH = Path.home() / '.config/teams-effects/settings.json'
 DEFAULTS = {'automatic': True, 'depth': True, 'language': 'en',
-            'preview_resolution': 360, 'preview_fps': 30, 'output_resolution': 360}
+            'preview_resolution': 360, 'preview_fps': 30, 'output_resolution': 360,
+            'close_action': 'stop', 'tray_enabled': True}
 LANGUAGES = {'en': 'English', 'nl': 'Nederlands'}
+CLOSE_ACTIONS = ('stop', 'background', 'tray')
 PREVIEW_RESOLUTIONS = (360, 540, 720)
 PREVIEW_FPS = (15, 24, 30)
 OUTPUT_RESOLUTIONS = (360, 540, 720)
@@ -24,11 +26,13 @@ def load_settings():
     if not isinstance(saved, dict):
         saved = {}
     values = {**DEFAULTS, **saved}
-    for key in ('automatic', 'depth'):
+    for key in ('automatic', 'depth', 'tray_enabled'):
         if type(values[key]) is not bool:
             values[key] = DEFAULTS[key]
     if not isinstance(values['language'], str) or values['language'] not in LANGUAGES:
         values['language'] = DEFAULTS['language']
+    if not isinstance(values['close_action'], str) or values['close_action'] not in CLOSE_ACTIONS:
+        values['close_action'] = DEFAULTS['close_action']
     for key, choices in SETTING_CHOICES.items():
         if type(values[key]) is not int or values[key] not in choices:
             values[key] = DEFAULTS[key]
@@ -42,6 +46,9 @@ def update_settings(**updates):
         if key == 'language':
             if not isinstance(value, str) or value not in LANGUAGES:
                 raise ValueError('Supported languages: nl, en')
+        elif key == 'close_action':
+            if not isinstance(value, str) or value not in CLOSE_ACTIONS:
+                raise ValueError('Supported close actions: stop, background, tray')
         elif key in SETTING_CHOICES:
             if type(value) is not int or value not in SETTING_CHOICES[key]:
                 raise ValueError(f'Unsupported {key}: {value}')

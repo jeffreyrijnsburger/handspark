@@ -21,7 +21,7 @@ def capture_panel():
     app.setApplicationName('HandSpark')
     with tempfile.TemporaryDirectory() as directory:
         settings.SETTINGS_PATH = Path(directory) / 'settings.json'
-        widget = panel.Panel(autostart=False, poll=False)
+        widget = panel.Panel(autostart=False, poll=False, manage_service=False)
         widget.resize(1100, 940)
         widget.apply_status({'automatic': True, 'depth': True, 'reaction': 'lasers',
                              'hands': 2, 'candidate': 'lasers'})

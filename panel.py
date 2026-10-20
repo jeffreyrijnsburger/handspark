@@ -12,7 +12,7 @@ from control import request
 from i18n import translate
 from live_preview import LivePreview
 from reactions import REACTIONS
-from settings import LANGUAGES, OUTPUT_RESOLUTIONS, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
+from settings import CLOSE_ACTIONS, LANGUAGES, OUTPUT_RESOLUTIONS, PREVIEW_FPS, PREVIEW_RESOLUTIONS, load_settings, update_settings
 
 
 def launcher_path():
@@ -41,9 +41,17 @@ class Preview(QtWidgets.QWidget):
 
 
 class Panel(QtWidgets.QWidget):
-    def __init__(self, autostart=True, poll=True):
+    def __init__(self, autostart=True, poll=True, manage_service=True):
         super().__init__()
+        self.manage_service = manage_service
+        self.closing = False
+        self.background_closing = False
+        self.close_ready = False
         preferences = load_settings()
+        self.close_action = preferences['close_action']
+        self.tray_enabled = preferences['tray_enabled']
+        self.force_shutdown = False
+        self.tray_available = QtWidgets.QSystemTrayIcon.isSystemTrayAvailable()
         self.language = preferences['language']
         self.preview_options = (preferences['preview_resolution'], preferences['preview_fps'])
         self.output_resolution = preferences['output_resolution']
@@ -159,6 +167,20 @@ class Panel(QtWidgets.QWidget):
             self.buttons[key] = button
         outer.addLayout(self.grid)
         self.reflow()
+        closing_row = QtWidgets.QHBoxLayout()
+        self.close_label = QtWidgets.QLabel()
+        self.close_choice = QtWidgets.QComboBox()
+        for action in CLOSE_ACTIONS:
+            self.close_choice.addItem('', action)
+        self.close_label.setBuddy(self.close_choice)
+        self.close_choice.currentIndexChanged.connect(self.change_close_behavior)
+        closing_row.addWidget(self.close_label)
+        closing_row.addWidget(self.close_choice)
+        closing_row.addStretch()
+        outer.addLayout(closing_row)
+        self.tray_choice = QtWidgets.QCheckBox()
+        self.tray_choice.toggled.connect(self.change_tray)
+        outer.addWidget(self.tray_choice)
         self.foot = QtWidgets.QLabel()
         self.foot.setWordWrap(True)
         outer.addWidget(self.foot)
@@ -177,6 +199,23 @@ class Panel(QtWidgets.QWidget):
         outer.addLayout(language_row)
         self.process = QtCore.QProcess(self)
         self.process.finished.connect(self.process_finished)
+        self.process.errorOccurred.connect(self.process_error)
+        self.shutdown_process = QtCore.QProcess(self)
+        self.shutdown_process.finished.connect(self.shutdown_finished)
+        self.shutdown_process.errorOccurred.connect(self.shutdown_error)
+        self.tray = QtWidgets.QSystemTrayIcon(self.windowIcon(), self)
+        self.tray.setToolTip('HandSpark')
+        self.tray_menu = QtWidgets.QMenu(self)
+        self.tray_open = self.tray_menu.addAction('')
+        self.tray_open.triggered.connect(self.show_panel)
+        self.tray_menu.addSeparator()
+        self.tray_camera = self.tray_menu.addAction('')
+        self.tray_camera.triggered.connect(self.toggle_camera)
+        self.tray_menu.addSeparator()
+        self.tray_quit = self.tray_menu.addAction('')
+        self.tray_quit.triggered.connect(self.quit_application)
+        self.tray.setContextMenu(self.tray_menu)
+        self.tray.activated.connect(self.tray_activated)
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.poll)
         self.retranslate()
@@ -201,7 +240,15 @@ class Panel(QtWidgets.QWidget):
         self.depth.setToolTip(self.text('depth_help'))
         self.reaction_prompt.setText(self.text('reaction_prompt'))
         self.cancel.setText(self.text('cancel'))
-        self.foot.setText(self.text('foot'))
+        self.close_label.setText(self.text('close_behavior'))
+        self.close_choice.setAccessibleName(self.text('close_behavior'))
+        for index, action in enumerate(CLOSE_ACTIONS):
+            self.close_choice.setItemText(index, self.text('close.' + action))
+        self.tray_choice.setText(self.text('tray_enabled'))
+        self.tray_choice.setToolTip(self.text('tray_help' if self.tray_available else 'tray_unavailable'))
+        self.tray_open.setText(self.text('tray_open'))
+        self.tray_quit.setText(self.text('tray_quit'))
+        self.apply_close_preferences(self.close_action, self.tray_enabled)
         self.language_label.setText(self.text('language'))
         self.language_choice.setAccessibleName(self.text('language'))
         self.language_choice.setToolTip(self.text('language_help'))
@@ -228,6 +275,7 @@ class Panel(QtWidgets.QWidget):
         key = 'camera_stop' if self.online else 'camera_start'
         self.camera.setText(self.text(key))
         self.camera.setToolTip(self.text(key + '_help'))
+        self.tray_camera.setText(self.text(key))
 
     def change_language(self, index):
         language = self.language_choice.itemData(index)
@@ -244,6 +292,69 @@ class Panel(QtWidgets.QWidget):
                 self.action_error = None
         self.retranslate()
 
+    def apply_close_preferences(self, action, tray_enabled):
+        was_hidden = self.tray.isVisible() and not self.isVisible()
+        self.close_action, self.tray_enabled = action, tray_enabled
+        blockers = [QtCore.QSignalBlocker(widget) for widget in (self.close_choice, self.tray_choice)]
+        self.close_choice.setCurrentIndex(self.close_choice.findData(action))
+        self.tray_choice.setChecked(tray_enabled)
+        self.tray_choice.setEnabled(self.tray_available)
+        self.tray_choice.setToolTip(self.text('tray_help' if self.tray_available else 'tray_unavailable'))
+        can_hide = tray_enabled and self.tray_available
+        self.close_choice.model().item(self.close_choice.findData('tray')).setEnabled(can_hide)
+        self.tray.setVisible(can_hide)
+        del blockers
+        effective = 'stop' if action == 'tray' and not can_hide else action
+        self.foot.setText(self.text('foot.' + effective))
+        if not can_hide and was_hidden and not self.closing:
+            # If the tray is disabled remotely while hidden, restore the window.
+            self.show_panel()
+
+    def save_close_preferences(self, **updates):
+        try:
+            values = update_settings(**updates)
+        except OSError:
+            self.action_error = 'close_save_failed'
+            self.error_until = time.monotonic() + 5
+            self.apply_close_preferences(self.close_action, self.tray_enabled)
+        else:
+            self.apply_close_preferences(values['close_action'], values['tray_enabled'])
+            if self.action_error == 'close_save_failed':
+                self.action_error = None
+        self.render_feedback()
+
+    def change_close_behavior(self, index):
+        self.save_close_preferences(close_action=self.close_choice.itemData(index))
+
+    def change_tray(self, enabled):
+        updates = {'tray_enabled': enabled}
+        if not enabled and self.close_action == 'tray':
+            updates['close_action'] = 'stop'
+        self.save_close_preferences(**updates)
+
+    def show_panel(self):
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def hideEvent(self, event):
+        self.reader.stop()
+        super().hideEvent(event)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self.online and self.live_preview and not self.closing and not self.starting:
+            self.reader.start()
+
+    def tray_activated(self, reason):
+        if reason in (QtWidgets.QSystemTrayIcon.Trigger, QtWidgets.QSystemTrayIcon.DoubleClick):
+            self.show_panel()
+
+    def quit_application(self):
+        self.force_shutdown = True
+        self.show_panel()
+        self.close()
+
     def apply_preview_options(self, resolution, fps):
         self.preview_options = (resolution, fps)
         for control, value in ((self.resolution_choice, resolution), (self.fps_choice, fps)):
@@ -253,6 +364,8 @@ class Panel(QtWidgets.QWidget):
         self.reader.configure(resolution, fps)
 
     def change_output(self, _index):
+        if self.closing:
+            return
         resolution = self.output_choice.currentData()
         if resolution == self.output_resolution or resolution is None:
             return
@@ -321,7 +434,7 @@ class Panel(QtWidgets.QWidget):
         super().resizeEvent(event)
 
     def start_camera(self):
-        if self.process.state() != QtCore.QProcess.NotRunning:
+        if self.closing or self.process.state() != QtCore.QProcess.NotRunning:
             return
         self.starting = True
         self.action_error = None
@@ -331,6 +444,8 @@ class Panel(QtWidgets.QWidget):
         self.process.start(sys.executable, [str(launcher_path()), 'start'])
 
     def toggle_camera(self):
+        if self.closing or self.process.state() != QtCore.QProcess.NotRunning:
+            return
         if self.online:
             self.starting = False
             self.camera.setEnabled(False)
@@ -340,6 +455,13 @@ class Panel(QtWidgets.QWidget):
             self.start_camera()
 
     def process_finished(self, exit_code, exit_status):
+        if self.closing:
+            if self.background_closing and not self.force_shutdown:
+                self.close_ready = True
+                self.close()
+            else:
+                self.stop_for_close()
+            return
         self.starting = False
         self.camera.setEnabled(True)
         self.output_choice.setEnabled(True)
@@ -349,15 +471,26 @@ class Panel(QtWidgets.QWidget):
             self.render_feedback()
         self.poll()
 
+    def process_error(self, error):
+        if error == QtCore.QProcess.FailedToStart:
+            self.process_finished(1, QtCore.QProcess.CrashExit)
+
     def command(self, command, **values):
-        if not self.online:
+        if self.closing or not self.online:
             return
         if command in ('automatic', 'depth'):
             self.expected[command] = (values['enabled'], time.monotonic() + 2)
         self.actions.append(self.executor.submit(request, command, **values))
 
     def poll(self):
+        if self.closing:
+            return
         preferences = load_settings()
+        available = QtWidgets.QSystemTrayIcon.isSystemTrayAvailable()
+        tray_changed = available != self.tray_available
+        self.tray_available = available
+        if tray_changed or (preferences['close_action'], preferences['tray_enabled']) != (self.close_action, self.tray_enabled):
+            self.apply_close_preferences(preferences['close_action'], preferences['tray_enabled'])
         language = preferences['language']
         if language != self.language:
             self.language = language
@@ -403,8 +536,10 @@ class Panel(QtWidgets.QWidget):
         self.render_feedback()
 
     def apply_status(self, state):
+        if self.closing:
+            return
         self.online = True
-        if self.live_preview and not self.starting:
+        if self.live_preview and self.isVisible() and not self.starting:
             self.reader.start()
         self.last_state = state
         self.update_camera_label()
@@ -440,7 +575,9 @@ class Panel(QtWidgets.QWidget):
         state = self.last_state
         reaction = state.get('reaction')
         candidate = state.get('candidate')
-        if self.action_error and time.monotonic() < self.error_until:
+        if self.closing:
+            text = self.text('closing_background' if self.background_closing and not self.force_shutdown else 'closing')
+        elif self.action_error and time.monotonic() < self.error_until:
             text = self.text(self.action_error)
         elif self.starting:
             text = self.text('starting')
@@ -465,10 +602,77 @@ class Panel(QtWidgets.QWidget):
         self.feedback.setText(text)
 
     def closeEvent(self, event):
+        if self.manage_service and self.closing and not self.close_ready:
+            event.ignore()
+            if self.force_shutdown and self.background_closing:
+                self.background_closing = False
+                self.process.kill()
+            return
+        action = 'stop' if self.force_shutdown else self.close_action
+        if action == 'tray' and not (self.tray_enabled and self.tray_available):
+            action = 'stop'
+        if self.manage_service and action == 'tray' and not self.close_ready:
+            event.ignore()
+            self.hide()
+            return
+        if (self.manage_service and action == 'background' and not self.close_ready
+                and self.process.state() != QtCore.QProcess.NotRunning):
+            # Let an already requested start complete before destroying its CLI
+            # process. Background close deliberately keeps the service running.
+            event.ignore()
+            self.closing = True
+            self.background_closing = True
+            self.timer.stop()
+            self.reader.stop()
+            self.setEnabled(False)
+            self.render_feedback()
+            return
+        if self.manage_service and action == 'stop' and not self.close_ready:
+            event.ignore()
+            self.closing = True
+            self.timer.stop()
+            self.reader.stop()
+            self.setEnabled(False)
+            self.render_feedback()
+            # Cancel an in-flight start/restart before submitting the stop job.
+            # Its finished signal schedules shutdown, so it cannot start later.
+            if self.process.state() != QtCore.QProcess.NotRunning:
+                self.process.kill()
+            else:
+                self.stop_for_close()
+            return
         self.timer.stop()
         self.reader.close()
+        self.tray.hide()
         self.executor.shutdown(wait=False, cancel_futures=True)
         event.accept()
+
+    def stop_for_close(self):
+        if self.shutdown_process.state() == QtCore.QProcess.NotRunning:
+            self.shutdown_process.start(sys.executable, [str(launcher_path()), 'stop'])
+
+    def shutdown_finished(self, exit_code, exit_status):
+        if not self.closing:
+            return
+        if exit_code == 0 and exit_status == QtCore.QProcess.NormalExit:
+            self.close_ready = True
+            self.close()
+            return
+        # Keep the window available to retry if systemd could not stop video.
+        self.closing = False
+        self.background_closing = False
+        self.force_shutdown = False
+        self.starting = False
+        self.setEnabled(True)
+        self.action_error = 'close_failed'
+        self.error_until = time.monotonic() + 3600
+        self.render_feedback()
+        if self.live_preview:
+            self.timer.start(400)
+
+    def shutdown_error(self, error):
+        if error == QtCore.QProcess.FailedToStart:
+            self.shutdown_finished(1, QtCore.QProcess.CrashExit)
 
 
 def main():
@@ -491,9 +695,7 @@ def main():
         connection = server.nextPendingConnection()
         if connection:
             connection.disconnectFromServer()
-        panel.showNormal()
-        panel.raise_()
-        panel.activateWindow()
+        panel.show_panel()
 
     server.newConnection.connect(show)
     panel.show()

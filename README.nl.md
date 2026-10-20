@@ -13,7 +13,7 @@ Het is een knipoog naar Apples videoreacties op de Mac. De gebaren volgen
 dezelfde indeling, met eigen animaties en herkenning via MediaPipe en HaGRID. Er zit geen
 Apple-software of Apple-beeldmateriaal in. HandSpark is een onafhankelijk project.
 
-**0.5.0 · MIT-licentie · Linux · Nederlands / Engels**
+**0.6.0 · MIT-licentie · Linux · Nederlands / Engels**
 
 Download de nieuwste versie:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -27,7 +27,7 @@ https://github.com/jeffreyrijnsburger/handspark/releases/latest
 De `.deb` is bedoeld voor **Ubuntu 24.04 op Intel/AMD (amd64), met X11**.
 Modellen, effecten en Python-afhankelijkheden zitten erin. OBS 30.2 of nieuwer,
 Qt, FFmpeg en een werkende `v4l2loopback`-driver zijn systeemafhankelijkheden.
-Windows en macOS worden in 0.5.0 niet ondersteund.
+Windows en macOS worden in 0.6.0 niet ondersteund.
 
 Volg de installatieopdrachten in [README.md](README.md#install-the-release).
 Gebruik voor Ubuntu 24.04 OBS uit `noble-backports`. Open **HandSpark** uit het
@@ -91,8 +91,32 @@ In het venster zie je het uiteindelijke camerabeeld en acht reactieknoppen.
 **Effecten achter mij** bedient het personenmasker. **Effect stoppen** wist de
 lopende reactie. **Camera uitschakelen** stopt het camerabeeld, de virtuele
 camera en de reacties van HandSpark voor je video-app. Met **Camera inschakelen**
-zet je ze weer aan. Sluiten van het venster laat de camera aan, ook buiten een
-gesprek. De toepassing start niet automatisch bij aanmelden.
+zet je ze weer aan.
+
+Bij **Bij sluiten (×)** kies je wat het kruisje doet. De keuze wordt onthouden:
+
+- **Camera en OBS afsluiten** (standaard): stopt beeld en reacties en sluit
+  de OBS af die HandSpark zelf heeft gestart. Een apart gestarte OBS blijft open.
+- **Camera aan laten**: sluit het HandSpark-venster en laat de camera draaien.
+  Open HandSpark opnieuw of gebruik `handspark stop` om hem uit te schakelen.
+- **Verbergen in systeemvak**: verbergt het venster, met camera en reacties
+  actief. Het verborgen livevoorbeeld pauzeert om rekenkracht te besparen.
+
+**Icoon in systeemvak tonen** is instelbaar en staat standaard aan waar ondersteund.
+Via het icoon bij de klok kun je HandSpark openen, de camera bedienen of
+**Afsluiten** kiezen. **Afsluiten** stopt altijd de camera en de door HandSpark
+gestarte OBS, ongeacht de instelling van het kruisje. Zet je het icoon uit,
+dan verandert verbergen bij sluiten in afsluiten. Zonder beschikbaar systeemvak
+valt verbergen veilig terug op afsluiten. Na een OBS-fout start de camera pas
+weer als je hem zelf inschakelt. Automatisch starten bij aanmelden staat voor
+nieuwe installaties uit.
+
+```sh
+handspark on-close stop        # Camera en OBS afsluiten
+handspark on-close background  # Camera aan laten
+handspark on-close tray        # Verbergen in systeemvak
+handspark tray off             # Systeemvakicoon uit
+```
 
 Onderaan kies je **Nederlands** of **English**. De taal verandert direct en
 wordt onthouden. De standaard voor nieuwe installaties is Engels; een bestaande Nederlandse keuze blijft behouden. Via de terminal kan het ook:

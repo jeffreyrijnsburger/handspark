@@ -59,8 +59,8 @@ memory. It does not open the virtual-camera device, leaving the loopback
 capture stream available for Teams, Zoom or another camera consumer. This also
 works with drivers that permit only one capture stream. Preview resolution and
 FPS remain independent of camera output; frames never exceed the configured
-output resolution. The preview worker stops when its window closes; the
-backend continues running.
+output resolution. The preview worker pauses when its window is hidden and
+stops when the panel exits. Camera lifetime follows the saved close action.
 
 Camera output defaults to 360p / 30 fps, with 540p and 720p available in the
 panel. Output changes are applied to the stopped OBS profile before restarting
@@ -79,9 +79,22 @@ permissions. They must not be committed to Git.
 The application mutes OBS's special audio inputs in its dedicated profile;
 Your video app continues using its own microphone selection.
 
-The service starts only on demand. Closing the panel leaves video running;
-`handspark stop` stops it. Native PyQt5 supplies the window, including your
-desktop's fonts and palette. A matching SVG desktop/taskbar icon is installed.
+The service starts only on demand and does not restart automatically after an
+OBS failure or exit. By default, closing the panel stops video and quits only
+the OBS instance started by HandSpark. Choose `background` or `tray` with
+`handspark on-close` to keep video active after pressing ×. `handspark stop`
+always stops the service; the tray's Quit action does so too.
+
+The systemd user service uses `KillMode=mixed`: the controller receives SIGTERM
+first, releases the virtual camera, then terminates its OBS child. A hung child
+is killed after a bounded wait; systemd also enforces a 25-second stop deadline
+for the entire service group. An independently launched OBS is left running.
+
+Native PyQt5 supplies the window, including your desktop's fonts and palette.
+A matching SVG desktop/taskbar icon is installed. The optional system tray
+icon depends on desktop support. If it is unavailable, hide-on-close stops the
+camera instead of hiding an unreachable window. If the tray disappears while
+HandSpark is hidden, the window is restored.
 
 ## Cleanup
 

@@ -83,11 +83,13 @@ StartLimitBurst=5
 [Service]
 Type=notify
 ExecStart=:"{quoted}/.venv/bin/python" "{quoted}/controller.py"
-TimeoutStopSec=15
+TimeoutStopSec=25
 TimeoutStartSec=60
 Environment=PYTHONUNBUFFERED=1
-Restart=on-failure
-RestartSec=2
+# Let the controller release video before terminating its OBS child.
+KillMode=mixed
+# A closed/crashed OBS must not unexpectedly reopen the camera.
+Restart=no
 '''
 
 

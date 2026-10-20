@@ -86,6 +86,25 @@ class BootstrapTests(unittest.TestCase):
                                 text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_service_stops_controller_before_obs_without_reopening_video(self):
+        text = bootstrap.unit_text(self.home / 'app')
+        self.assertIn('\nKillMode=mixed\n', text)
+        self.assertIn('\nRestart=no\n', text)
+        self.assertIn('\nTimeoutStopSec=25\n', text)
+
+    def test_setup_migrates_old_shutdown_policy_once(self):
+        base = self.home / 'app'
+        (base / '.venv/bin').mkdir(parents=True)
+        (base / '.venv/bin/python').touch()
+        unit = self.home / '.config/systemd/user/teams-effects.service'
+        unit.parent.mkdir(parents=True)
+        unit.write_text('[Service]\nRestart=on-failure\nTimeoutStopSec=15\n')
+        with patch.object(bootstrap, 'configure_obs'), patch.object(bootstrap.subprocess, 'run') as run:
+            bootstrap.ensure_setup(base)
+            bootstrap.ensure_setup(base)
+        self.assertEqual(unit.read_text(), bootstrap.unit_text(base))
+        run.assert_called_once_with(['systemctl', '--user', 'daemon-reload'], check=True)
+
     def test_initial_configuration_preserves_existing_obs_settings(self):
         path = self.home / '.config/obs-studio/plugin_config/obs-websocket/config.json'
         path.parent.mkdir(parents=True)

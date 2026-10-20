@@ -285,8 +285,45 @@ def recognize(obs, overlays, stopping):
                 time.sleep(max(0.0, 1 / 8 - (time.monotonic() - started)))
         finally:
             control.close()
-            clear_effect()
-            matte.close()
+            try:
+                obs.ws.settimeout(1)
+                clear_effect()
+            except (OSError, RuntimeError, websocket.WebSocketException):
+                LOG.debug('OBS unavailable while clearing effects', exc_info=True)
+            finally:
+                try:
+                    matte.close()
+                except (OSError, RuntimeError, websocket.WebSocketException):
+                    LOG.debug('OBS unavailable while closing the mask', exc_info=True)
+
+
+def shutdown_obs(obs, child, stop_camera=True):
+    """Release video, then quit only the OBS process started by this controller."""
+    try:
+        if obs:
+            try:
+                obs.ws.settimeout(1)
+                if stop_camera:
+                    obs.call('StopVirtualCam')
+            except (OSError, RuntimeError, websocket.WebSocketException):
+                LOG.debug('OBS unavailable while stopping video', exc_info=True)
+            finally:
+                try:
+                    obs.close()
+                except (OSError, websocket.WebSocketException):
+                    LOG.debug('OBS connection already closed', exc_info=True)
+    finally:
+        if child and child.poll() is None:
+            try:
+                child.terminate()
+            except ProcessLookupError:
+                pass
+            else:
+                try:
+                    child.wait(timeout=8)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    child.wait(timeout=2)
 
 
 def run():
@@ -306,6 +343,7 @@ def run():
     log_path.parent.mkdir(parents=True, exist_ok=True)
     obs = None
     child = None
+    dedicated = False
     try:
         from bootstrap import configure_video
         configure_video()
@@ -344,22 +382,15 @@ def run():
         if (obs.call('GetProfileList')['currentProfileName'] != SCENE
                 or obs.call('GetSceneCollectionList')['currentSceneCollectionName'] != SCENE):
             raise RuntimeError('Select the Teams Effects OBS profile and collection, or close OBS and restart HandSpark.')
+        dedicated = True
         overlays = configure(obs)
         recognize(obs, overlays, stopping)
+    except (OSError, RuntimeError, websocket.WebSocketException):
+        if not stopping[0]:
+            raise
+        LOG.info('Camera stopped during shutdown')
     finally:
-        if obs:
-            try:
-                obs.call('StopVirtualCam')
-            except Exception:
-                pass
-            obs.close()
-        if child and child.poll() is None:
-            child.terminate()
-            try:
-                child.wait(timeout=8)
-            except subprocess.TimeoutExpired:
-                child.kill()
-                child.wait()
+        shutdown_obs(obs, child, stop_camera=dedicated)
 
 
 if __name__ == '__main__':

@@ -78,6 +78,26 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.call('output', '--fps', '15').returncode, 2)
         self.assertEqual(self.call('output', '--resolution', '1080').returncode, 2)
 
+    def test_tray_and_closing_settings_are_readable_and_saveable_offline(self):
+        defaults = json.loads(self.call('on-close', '--json').stdout)
+        self.assertEqual(defaults['close_action'], 'stop')
+        self.assertTrue(defaults['tray_enabled'])
+        self.assertFalse((Path(self.folder.name) / '.config').exists())
+        self.call('language', 'nl')
+        for action in ('background', 'tray', 'stop'):
+            result = self.call('on-close', action, '--json')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)['close_action'], action)
+        self.call('on-close', 'tray')
+        disabled = json.loads(self.call('tray', 'off', '--json').stdout)
+        self.assertFalse(disabled['tray_enabled'])
+        self.assertEqual(disabled['close_action'], 'stop')
+        enabled = json.loads(self.call('on-close', 'tray', '--json').stdout)
+        self.assertTrue(enabled['tray_enabled'])
+        self.assertEqual(json.loads(self.call('language', '--json').stdout)['language'], 'nl')
+        self.assertEqual(self.call('on-close', 'invalid').returncode, 2)
+        self.assertEqual(self.call('tray', 'invalid').returncode, 2)
+
 
 if __name__ == '__main__':
     unittest.main()
