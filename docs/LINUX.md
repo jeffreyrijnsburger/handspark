@@ -96,6 +96,13 @@ icon depends on desktop support. If it is unavailable, hide-on-close stops the
 camera instead of hiding an unreachable window. If the tray disappears while
 HandSpark is hidden, the window is restored.
 
+Application launches start in the system tray by default. The saved
+`start_in_tray` preference controls initial visibility; `handspark on-start window`
+shows the controls immediately on future launches. A disabled/unavailable tray
+falls back to a visible window. Starting hidden never starts the preview worker;
+opening the controls starts the preview normally. Camera startup errors open the
+window. OS login autostart remains an independent opt-in setting.
+
 ## Cleanup
 
 Stop HandSpark before removing its `.deb`. User data is retained by package removal.

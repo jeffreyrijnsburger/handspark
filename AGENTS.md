@@ -29,6 +29,10 @@ stops an effect; `stop` stops the camera and owned OBS. Closing the panel stops
 video by default. `on-close [stop|background|tray] [--json]` reads/saves the ×
 action without changing the running camera; `tray [on|off] [--json]` controls
 the optional tray icon. Explicit tray Quit always stops video and owned OBS.
+`on-start [tray|window] [--json]` reads/saves initial window visibility without
+changing the camera. Default startup is tray-only; an unavailable/disabled tray
+shows the window. Launching an existing instance raises its controls. Disabling
+the tray also restores visible-window startup. Login autostart remains opt-in.
 Do not change an existing user's saved language unless asked. English is the
 default; Dutch is supported with `handspark language nl`.
 

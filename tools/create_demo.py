@@ -22,6 +22,8 @@ def capture_panel():
     with tempfile.TemporaryDirectory() as directory:
         settings.SETTINGS_PATH = Path(directory) / 'settings.json'
         widget = panel.Panel(autostart=False, poll=False, manage_service=False)
+        widget.tray_available = True  # Illustrate controls on a tray-capable desktop.
+        widget.apply_window_preferences(widget.close_action, widget.tray_enabled)
         widget.resize(1100, 940)
         widget.apply_status({'automatic': True, 'depth': True, 'reaction': 'lasers',
                              'hands': 2, 'candidate': 'lasers'})

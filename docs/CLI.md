@@ -6,7 +6,7 @@ No network API or authentication token is needed to control the local app.
 
 | Command | Behavior |
 | --- | --- |
-| `panel` (default) | Open/raise the native window and start the camera |
+| `panel` (default) | Start camera and tray by default; use saved startup visibility, or raise an existing instance |
 | `setup` | Configure the current user's dedicated OBS profile and service |
 | `start` / `stop` | Start / stop the camera |
 | `restart` | Restart the camera and apply saved output resolution |
@@ -21,7 +21,8 @@ No network API or authentication token is needed to control the local app.
 | `preview [--resolution 360\|540\|720] [--fps 15\|24\|30] [--json]` | Read / save preview resolution and frame rate, even offline |
 | `output [--resolution 360\|540\|720] [--json]` | Read / save camera output size; applies on next start/restart, fixed 30 fps |
 | `on-close [stop\|background\|tray] [--json]` | Read / save what × does; default `stop`; `tray` also enables the icon |
-| `tray [on\|off] [--json]` | Read / save tray visibility; disabling it resets `tray` close action to `stop` |
+| `on-start [tray\|window] [--json]` | Read / save startup visibility; default `tray`; selecting `tray` enables the icon |
+| `tray [on\|off] [--json]` | Read / save tray visibility; off restores window startup and resets `tray` close action to `stop` |
 | `commands --json` | Discover commands, languages and reaction IDs |
 
 JSON is one UTF-8 object per invocation. Every JSON response contains
@@ -44,6 +45,11 @@ feed and never restart or reconfigure the meeting camera.
 actual `output_resolution` and `output_fps` reported by OBS. The panel's output
 selector saves and restarts an already running camera automatically.
 `on-close --json` and `tray --json` include `close_action` and `tray_enabled`.
+`on-start --json` includes Boolean `start_in_tray` (default `true`) and
+`tray_enabled`. Saving affects the next application start, without hiding an
+already visible window. If the tray is disabled or unavailable, startup shows
+the controls instead. Explicit camera starts and OS login autostart are separate
+from this visibility preference. Login autostart is opt-in for new installations.
 Reading or saving these settings does not start/stop a camera. An open panel
 applies changes automatically. `stop` closes video and owned OBS on ×;
 `background` exits the panel while video stays on; `tray` hides the panel while
@@ -53,11 +59,11 @@ Invalid syntax exits 2; general operational failures exit 1.
 An offline JSON status exits 3:
 
 ```json
-{"schema_version":1,"version":"0.6.1","ok":false,"error_code":"camera_offline"}
+{"schema_version":1,"version":"0.7.0","ok":false,"error_code":"camera_offline"}
 ```
 
 `status`, `list`, `commands`, `--version` and reading `language`, `preview` or
-`output`, `on-close` or `tray` do not start a
+`output`, `on-start`, `on-close` or `tray` do not start a
 camera or change settings. Reactions are accepted through a private local queue;
 successful acceptance does not mean an effect has already finished. Poll status
 to follow its lifetime. Pausing gestures and changing language do not interrupt

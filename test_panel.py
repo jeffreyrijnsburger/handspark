@@ -165,6 +165,73 @@ class PanelLanguageTests(unittest.TestCase):
         self.assertEqual(settings.load_settings()['close_action'], 'stop')
         self.assertIn('niet worden opgeslagen', self.widget.feedback.text())
 
+    def test_startup_preference_is_saved_without_changing_language_camera_or_close_action(self):
+        self.widget.tray_available = True
+        self.widget.save_window_preferences(close_action='background', tray_enabled=True)
+        self.assertTrue(self.widget.startup_choice.isChecked())
+        self.widget.startup_choice.setChecked(False)
+        values = settings.load_settings()
+        self.assertFalse(values['start_in_tray'])
+        self.assertEqual(values['language'], 'nl')
+        self.assertEqual(values['output_resolution'], 360)
+        self.assertFalse(self.widget.online)
+        self.assertEqual(self.widget.close_action, 'background')
+
+    def test_failed_startup_save_restores_previous_choice(self):
+        with patch.object(panel, 'update_settings', side_effect=PermissionError('read-only')):
+            self.widget.startup_choice.setChecked(False)
+        self.assertTrue(self.widget.startup_choice.isChecked())
+        self.assertTrue(settings.load_settings()['start_in_tray'])
+        self.assertIn('niet worden opgeslagen', self.widget.feedback.text())
+
+    def test_startup_in_tray_keeps_preview_stopped_until_controls_are_opened(self):
+        self.widget.tray_available = True
+        self.widget.apply_window_preferences('stop', True, True)
+        self.widget.live_preview = True
+        with patch.object(self.widget.reader, 'start') as start:
+            self.widget.present_on_startup()
+            self.widget.apply_status({'automatic': True, 'depth': True})
+            self.assertFalse(self.widget.isVisible())
+            start.assert_not_called()
+            self.widget.tray_open.trigger()
+            self.assertTrue(self.widget.isVisible())
+            start.assert_called_once()
+
+    def test_startup_falls_back_to_visible_window_without_an_enabled_available_tray(self):
+        for available, enabled in ((False, True), (True, False)):
+            with self.subTest(available=available, enabled=enabled):
+                widget = panel.Panel(autostart=False, poll=False, manage_service=False)
+                self.addCleanup(widget.close)
+                widget.tray_available = available
+                widget.apply_window_preferences('stop', enabled, True)
+                widget.present_on_startup()
+                self.assertTrue(widget.isVisible())
+                self.assertFalse(widget.startup_choice.isEnabled())
+
+    def test_window_startup_preference_shows_controls_even_with_a_tray(self):
+        self.widget.tray_available = True
+        self.widget.apply_window_preferences('stop', True, False)
+        self.widget.present_on_startup()
+        self.assertTrue(self.widget.isVisible())
+
+    def test_startup_changes_from_cli_do_not_hide_the_current_window(self):
+        self.widget.show()
+        settings.update_settings(start_in_tray=False)
+        with patch.object(panel, 'request', return_value={'automatic': True, 'depth': True}):
+            self.widget.poll()
+            self.widget.pending.result(timeout=2)
+        self.assertFalse(self.widget.startup_choice.isChecked())
+        self.assertTrue(self.widget.isVisible())
+
+    def test_camera_start_failure_opens_the_hidden_controls(self):
+        self.widget.tray_available = True
+        self.widget.apply_window_preferences('stop', True, True)
+        self.widget.present_on_startup()
+        with patch.object(self.widget, 'poll'):
+            self.widget.process_finished(1, QtCore.QProcess.NormalExit)
+        self.assertTrue(self.widget.isVisible())
+        self.assertIn('kon niet starten', self.widget.feedback.text())
+
     def test_language_and_stop_controls_fit_wide_and_narrow_layouts(self):
         self.widget.show()
         for code in ('nl', 'en'):
@@ -175,6 +242,7 @@ class PanelLanguageTests(unittest.TestCase):
                 self.assertEqual(self.widget.width(), width)
                 for control in (self.widget.language_choice, self.widget.resolution_choice, self.widget.fps_choice,
                                 self.widget.output_choice, self.widget.close_choice, self.widget.tray_choice,
+                                self.widget.startup_choice,
                                 self.widget.camera, self.widget.cancel,
                                 *self.widget.buttons.values()):
                     position = control.mapTo(self.widget, QtCore.QPoint())
@@ -296,14 +364,14 @@ class PanelShutdownTests(unittest.TestCase):
         self.assertFalse(self.widget.close_ready)
 
     def test_background_close_does_not_stop_the_camera(self):
-        self.widget.apply_close_preferences('background', False)
+        self.widget.apply_window_preferences('background', False)
         self.assertTrue(self.widget.close())
         self.assertFalse(self.widget.isVisible())
         self.assertEqual(self.actions(), [])
 
     def test_hide_to_tray_then_open_and_explicit_quit(self):
         self.widget.tray_available = True
-        self.widget.apply_close_preferences('tray', True)
+        self.widget.apply_window_preferences('tray', True)
         self.assertFalse(self.widget.close())
         self.assertFalse(self.widget.isVisible())
         self.assertFalse(self.widget.closing)
@@ -316,7 +384,7 @@ class PanelShutdownTests(unittest.TestCase):
 
     def test_missing_tray_falls_back_to_stopping_instead_of_hiding(self):
         self.widget.tray_available = False
-        self.widget.apply_close_preferences('tray', True)
+        self.widget.apply_window_preferences('tray', True)
         self.widget.close()
         self.wait_until(lambda: not self.widget.isVisible())
         self.assertTrue(self.widget.close_ready)
@@ -324,23 +392,24 @@ class PanelShutdownTests(unittest.TestCase):
 
     def test_disabling_tray_restores_hidden_window_and_safe_close_action(self):
         self.widget.tray_available = True
-        self.widget.save_close_preferences(close_action='tray', tray_enabled=True)
+        self.widget.save_window_preferences(close_action='tray', tray_enabled=True)
         self.widget.close()
         self.assertFalse(self.widget.isVisible())
         self.widget.change_tray(False)
         self.assertTrue(self.widget.isVisible())
         self.assertEqual(settings.load_settings()['close_action'], 'stop')
         self.assertFalse(settings.load_settings()['tray_enabled'])
+        self.assertFalse(settings.load_settings()['start_in_tray'])
 
     def test_quit_always_stops_even_when_close_is_configured_for_background(self):
-        self.widget.apply_close_preferences('background', True)
+        self.widget.apply_window_preferences('background', True)
         self.widget.quit_application()
         self.wait_until(lambda: not self.widget.isVisible())
         self.assertEqual(self.actions(), ['stop'])
 
     def test_background_close_finishes_inflight_start_without_killing_it(self):
         self.launcher.write_text(self.launcher.read_text().replace('30 if action', '0.2 if action'))
-        self.widget.apply_close_preferences('background', False)
+        self.widget.apply_window_preferences('background', False)
         self.widget.start_camera()
         self.wait_until(lambda: 'start' in self.actions())
         self.widget.close()
@@ -351,7 +420,7 @@ class PanelShutdownTests(unittest.TestCase):
     def test_losing_tray_restores_hidden_window_without_touching_camera(self):
         self.widget.tray_available = True
         settings.update_settings(close_action='tray', tray_enabled=True)
-        self.widget.apply_close_preferences('tray', True)
+        self.widget.apply_window_preferences('tray', True)
         self.widget.close()
         with patch.object(panel.QtWidgets.QSystemTrayIcon, 'isSystemTrayAvailable', return_value=False), \
                 patch.object(panel, 'request', return_value={'automatic': True, 'depth': True}):
@@ -361,8 +430,15 @@ class PanelShutdownTests(unittest.TestCase):
         self.assertEqual(self.actions(), [])
 
     def test_hidden_panel_keeps_the_application_event_loop_running(self):
+        self.assert_hidden_event_loop(startup=False)
+
+    def test_starting_in_tray_keeps_the_application_event_loop_running(self):
+        self.assert_hidden_event_loop(startup=True)
+
+    def assert_hidden_event_loop(self, startup):
         script = self.base / 'tray_loop.py'
         marker = self.base / 'timer-fired'
+        close_step = '' if startup else 'QtCore.QTimer.singleShot(0, window.close)\n'
         script.write_text(
             'import sys\n'
             f'sys.path.insert(0, {str(Path(panel.__file__).parent)!r})\n'
@@ -373,15 +449,15 @@ class PanelShutdownTests(unittest.TestCase):
             'app = QtWidgets.QApplication([])\n'
             'window = panel.Panel(autostart=False, poll=False)\n'
             'window.tray_available = True\n'
-            'window.apply_close_preferences("tray", True)\n'
-            'window.show()\n'
+            'window.apply_window_preferences("tray", True)\n'
+            f'window.{"present_on_startup" if startup else "show"}()\n'
             'def finish():\n'
             '    assert not window.isVisible()\n'
             f'    Path({str(marker)!r}).touch()\n'
             '    window.manage_service = False\n'
             '    window.close()\n'
             '    app.quit()\n'
-            'QtCore.QTimer.singleShot(0, window.close)\n'
+            f'{close_step}'
             'QtCore.QTimer.singleShot(100, finish)\n'
             'app.exec_()\n')
         result = subprocess.run([panel.sys.executable, str(script)], capture_output=True, text=True, timeout=5)

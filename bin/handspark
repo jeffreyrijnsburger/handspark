@@ -26,19 +26,19 @@ def main():
     language = load_settings()['language']
     parser = argparse.ArgumentParser(description='HandSpark: local gesture reactions for your Linux webcam.')
     parser.add_argument('--version', action='version', version='HandSpark ' + VERSION)
-    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language, preview, output, on-close, tray and commands')
+    parser.add_argument('--json', action='store_true', help='Machine-readable output for status, list, language, preview, output, on-start, on-close, tray and commands')
     parser.add_argument('--resolution', type=int, choices=PREVIEW_RESOLUTIONS, help='Preview or camera output height in pixels')
     parser.add_argument('--fps', type=int, choices=PREVIEW_FPS, help='Preview frames per second')
     parser.add_argument('command', nargs='?', default='panel', choices=(
-        'panel', 'setup', 'start', 'stop', 'restart', 'status', 'list', 'language', 'preview', 'output', 'on-close', 'tray',
+        'panel', 'setup', 'start', 'stop', 'restart', 'status', 'list', 'language', 'preview', 'output', 'on-start', 'on-close', 'tray',
         'pause', 'resume', 'cancel', 'react', 'commands', *REACTIONS))
     parser.add_argument('argument', nargs='?')
     args = parser.parse_args()
     action = args.command
-    if args.argument is not None and action not in ('language', 'react', 'on-close', 'tray'):
+    if args.argument is not None and action not in ('language', 'react', 'on-start', 'on-close', 'tray'):
         parser.error('This command does not take an argument')
-    if args.json and action not in ('status', 'list', 'language', 'preview', 'output', 'on-close', 'tray', 'commands'):
-        parser.error('--json is supported by status, list, language, preview, output, on-close, tray and commands')
+    if args.json and action not in ('status', 'list', 'language', 'preview', 'output', 'on-start', 'on-close', 'tray', 'commands'):
+        parser.error('--json is supported by status, list, language, preview, output, on-start, on-close, tray and commands')
     if args.resolution is not None and action not in ('preview', 'output'):
         parser.error('--resolution is supported by preview and output')
     if args.fps is not None and action != 'preview':
@@ -58,8 +58,9 @@ def main():
             'preview [--resolution 360|540|720] [--fps 15|24|30]': 'Read or change preview quality without starting the camera',
             'output [--resolution 360|540|720]': 'Read or save camera output resolution; applies on next start/restart, fixed 30 fps',
             'on-close [stop|background|tray]': 'Read or save window closing behavior without changing the running camera',
-            'tray [on|off]': 'Read or save system tray visibility; disabling tray resets hide-on-close to stop',
-            'panel': 'Show the native control window',
+            'on-start [tray|window]': 'Read or save startup visibility; tray is the default and enables the icon',
+            'tray [on|off]': 'Read or save tray visibility; off restores window startup and resets hide-on-close to stop',
+            'panel': 'Start in the tray by default, or raise controls when already running',
             'setup': 'Configure this user’s OBS profile and service'},
             'languages': list(LANGUAGES), 'reactions': list(REACTIONS)})
         return 0
@@ -115,6 +116,18 @@ def main():
                 return 3
             return 0
         return subprocess.call(['systemctl', '--user', 'status', '--no-pager', UNIT])
+    if action == 'on-start':
+        if args.argument is not None and args.argument not in ('tray', 'window'):
+            parser.error('Choose tray or window')
+        updates = {'start_in_tray': args.argument == 'tray'}
+        if args.argument == 'tray':
+            updates['tray_enabled'] = True
+        values = update_settings(**updates) if args.argument is not None else load_settings()
+        if args.json:
+            emit({'ok': True, 'start_in_tray': values['start_in_tray'], 'tray_enabled': values['tray_enabled']})
+        else:
+            print('tray' if values['start_in_tray'] else 'window')
+        return 0
     if action == 'on-close':
         if args.argument is not None and args.argument not in CLOSE_ACTIONS:
             parser.error('Choose stop, background or tray')
@@ -134,8 +147,10 @@ def main():
         values = load_settings()
         if args.argument is not None:
             updates = {'tray_enabled': args.argument == 'on'}
-            if args.argument == 'off' and values['close_action'] == 'tray':
-                updates['close_action'] = 'stop'
+            if args.argument == 'off':
+                updates['start_in_tray'] = False
+                if values['close_action'] == 'tray':
+                    updates['close_action'] = 'stop'
             values = update_settings(**updates)
         if args.json:
             emit({'ok': True, 'tray_enabled': values['tray_enabled'], 'close_action': values['close_action']})

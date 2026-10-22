@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 — 2026-10-22
+
+- Start in the system tray by default, with a saved Dutch/English option to
+  open the controls immediately instead. Keep startup independent of × behavior.
+- Expose offline startup configuration with `on-start tray|window` and JSON.
+- Show the window when the tray is disabled/unavailable or camera startup
+  fails, and retain normal open/quit actions and single-instance behavior.
+- Keep the preview stopped while hidden and restore visible-window startup
+  when disabling the tray. Preserve language, output and closing preferences.
+
 ## 0.6.1 — 2026-10-20
 
 - Fix the missing system tray icon on KDE/StatusNotifier desktops by supplying
