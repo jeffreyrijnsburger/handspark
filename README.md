@@ -14,7 +14,7 @@ gesture mappings and independently written animations. No Apple software or
 proprietary effects are included. This is a community project, unaffiliated with
 Apple, Microsoft, Zoom or OBS.
 
-**Version 0.6.1 · MIT · Linux · Dutch / English**
+**Version 0.7.0 · MIT · Linux · Dutch / English**
 
 Latest ready-to-install build:
 https://github.com/jeffreyrijnsburger/handspark/releases/latest
@@ -40,7 +40,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 - Local inference. No account, cloud processing, API key or telemetry.
 - A documented CLI with JSON output for scripts and AI agents.
 - A desktop launcher and matching HandSpark taskbar icon.
-- An optional system tray menu and saved choices for the window's close button.
+- System tray startup by default, with saved startup and close-button choices.
 
 ![Actual golden thumbs-up animation on a synthetic background](docs/thumbs-up-preview.gif)
 
@@ -54,7 +54,7 @@ Nederlandse uitleg: [README.nl.md](README.nl.md). Agents and automation:
 | --- | --- |
 | Ubuntu 24.04, amd64, KDE/X11, Python 3.12 | Tested target; `.deb` available |
 | Other Linux distributions / Wayland | May work from source; untested |
-| Windows / macOS | Not supported in 0.6.1 |
+| Windows / macOS | Not supported in 0.7.0 |
 
 The current implementation uses OBS Studio, V4L2 loopback and a systemd user
 service. Recognition and rendering could be reused for other platforms, but
@@ -71,14 +71,14 @@ checksum-pinned models and rendered animations. You do **not** need to clone
 the repository, install pip packages or render effects to use that build.
 System OBS, Qt, FFmpeg and a working V4L2 loopback driver are still required.
 
-1. Download `handspark_0.6.1_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
+1. Download `handspark_0.7.0_ubuntu24.04_amd64.deb` and `SHA256SUMS` from the release.
 2. From that download folder:
 
    ```sh
    sha256sum -c SHA256SUMS
    sudo apt update
    sudo apt install -t noble-backports obs-studio
-   sudo apt install ./handspark_0.6.1_ubuntu24.04_amd64.deb
+   sudo apt install ./handspark_0.7.0_ubuntu24.04_amd64.deb
    ```
 
    OBS 30.2 or newer is required. Ubuntu 24.04's original OBS 30.0 package can
@@ -112,7 +112,7 @@ System OBS, Qt, FFmpeg and a working V4L2 loopback driver are still required.
 5. Close OBS before the **first** HandSpark start. Open **HandSpark** from your
    application menu, or run `handspark panel`. It creates a dedicated OBS profile
    and collection and a password for its local OBS connection. The camera starts
-   when you open the panel. Nothing starts automatically at login.
+   when you launch HandSpark. Nothing starts automatically at login.
 6. Select **Teams Effects** as the camera in your video app:
    - **Teams:** Settings → Devices → Camera.
    - **Zoom:** Settings → Video → Camera.
@@ -187,6 +187,14 @@ toggles body segmentation. **Stop effect** clears the current animation.
 **Turn camera off** stops HandSpark’s camera feed, virtual camera and reactions
 for your video app. **Turn camera on** enables them again.
 
+HandSpark starts in the system tray by default, with the camera active and no
+visible window or preview worker. Click the icon beside the clock and choose
+**Open HandSpark** to open the controls. Uncheck **Start in system tray** to
+show the window on future starts. Launching an already running HandSpark raises
+its controls. Startup choices are saved independently of the × setting.
+Without an enabled, available system tray, the window opens instead. Camera
+startup failures also open it so you can retry.
+
 **When closing (×)** is saved and offers three choices:
 
 - **Stop camera and OBS** (default): stop video and reactions, then quit OBS if
@@ -199,11 +207,14 @@ for your video app. **Turn camera on** enables them again.
 **Show system tray icon** is optional and enabled by default where supported.
 Its menu offers **Open HandSpark**, camera on/off and **Quit**. **Quit** always
 stops the camera and the OBS started by HandSpark, regardless of the × setting.
-Disabling the icon resets hide-on-close to stop; when a tray is unavailable,
+Disabling the icon restores visible-window startup and resets hide-on-close to stop; when a tray is unavailable,
 hide-on-close safely falls back to stopping. After an OBS failure, start the
 camera again explicitly; it does not reopen automatically.
 
 ```sh
+handspark on-start tray
+handspark on-start window
+handspark on-start --json
 handspark on-close stop
 handspark on-close background
 handspark on-close tray
@@ -223,7 +234,7 @@ handspark language nl
 Preferences are in `~/.config/teams-effects/settings.json`:
 
 ```json
-{"automatic": true, "depth": true, "language": "en", "preview_resolution": 360, "preview_fps": 30, "output_resolution": 360, "close_action": "stop", "tray_enabled": true}
+{"automatic": true, "depth": true, "language": "en", "preview_resolution": 360, "preview_fps": 30, "output_resolution": 360, "close_action": "stop", "tray_enabled": true, "start_in_tray": true}
 ```
 
 Existing Dutch preferences are preserved when updating.

@@ -82,6 +82,18 @@ class PreferenceTests(unittest.TestCase):
         self.assertEqual(settings.load_settings()['close_action'], 'stop')
         self.assertTrue(settings.load_settings()['tray_enabled'])
 
+    def test_startup_default_is_tray_and_only_boolean_preferences_are_accepted(self):
+        self.assertTrue(settings.load_settings()['start_in_tray'])
+        settings.update_settings(language='nl', start_in_tray=False)
+        settings.update_settings(depth=False)
+        self.assertFalse(settings.load_settings()['start_in_tray'])
+        self.assertEqual(settings.load_settings()['language'], 'nl')
+        for invalid in ('false', 1, None):
+            with self.assertRaises(ValueError):
+                settings.update_settings(start_in_tray=invalid)
+        self.path.write_text('{"start_in_tray": "false"}')
+        self.assertTrue(settings.load_settings()['start_in_tray'])
+
     def test_control_errors_use_current_language_without_restarting_camera(self):
         runtime = Path(self.folder.name) / 'runtime'
         with patch.object(control, 'RUNTIME', runtime), patch.object(control, 'SOCKET', runtime / 'control.sock'):

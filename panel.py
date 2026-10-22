@@ -63,6 +63,7 @@ class Panel(QtWidgets.QWidget):
         preferences = load_settings()
         self.close_action = preferences['close_action']
         self.tray_enabled = preferences['tray_enabled']
+        self.start_in_tray = preferences['start_in_tray']
         self.force_shutdown = False
         self.tray_available = QtWidgets.QSystemTrayIcon.isSystemTrayAvailable()
         self.language = preferences['language']
@@ -71,7 +72,7 @@ class Panel(QtWidgets.QWidget):
         self.live_preview = poll
         self.preview_error = False
         self.setWindowIcon(QtGui.QIcon(str(Path(__file__).parent / 'icons/handspark.svg')))
-        self.resize(760, 780)
+        self.resize(760, 820)
         self.setMinimumSize(480, 700)
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.pending = None
@@ -194,6 +195,9 @@ class Panel(QtWidgets.QWidget):
         self.tray_choice = QtWidgets.QCheckBox()
         self.tray_choice.toggled.connect(self.change_tray)
         outer.addWidget(self.tray_choice)
+        self.startup_choice = QtWidgets.QCheckBox()
+        self.startup_choice.toggled.connect(self.change_startup)
+        outer.addWidget(self.startup_choice)
         self.foot = QtWidgets.QLabel()
         self.foot.setWordWrap(True)
         outer.addWidget(self.foot)
@@ -258,10 +262,12 @@ class Panel(QtWidgets.QWidget):
         for index, action in enumerate(CLOSE_ACTIONS):
             self.close_choice.setItemText(index, self.text('close.' + action))
         self.tray_choice.setText(self.text('tray_enabled'))
+        self.startup_choice.setText(self.text('start_in_tray'))
+        self.startup_choice.setToolTip(self.text('start_in_tray_help'))
         self.tray_choice.setToolTip(self.text('tray_help' if self.tray_available else 'tray_unavailable'))
         self.tray_open.setText(self.text('tray_open'))
         self.tray_quit.setText(self.text('tray_quit'))
-        self.apply_close_preferences(self.close_action, self.tray_enabled)
+        self.apply_window_preferences(self.close_action, self.tray_enabled)
         self.language_label.setText(self.text('language'))
         self.language_choice.setAccessibleName(self.text('language'))
         self.language_choice.setToolTip(self.text('language_help'))
@@ -305,15 +311,20 @@ class Panel(QtWidgets.QWidget):
                 self.action_error = None
         self.retranslate()
 
-    def apply_close_preferences(self, action, tray_enabled):
+    def apply_window_preferences(self, action, tray_enabled, start_in_tray=None):
         was_hidden = self.tray.isVisible() and not self.isVisible()
         self.close_action, self.tray_enabled = action, tray_enabled
-        blockers = [QtCore.QSignalBlocker(widget) for widget in (self.close_choice, self.tray_choice)]
+        if start_in_tray is not None:
+            self.start_in_tray = start_in_tray
+        blockers = [QtCore.QSignalBlocker(widget) for widget in
+                    (self.close_choice, self.tray_choice, self.startup_choice)]
         self.close_choice.setCurrentIndex(self.close_choice.findData(action))
         self.tray_choice.setChecked(tray_enabled)
         self.tray_choice.setEnabled(self.tray_available)
         self.tray_choice.setToolTip(self.text('tray_help' if self.tray_available else 'tray_unavailable'))
         can_hide = tray_enabled and self.tray_available
+        self.startup_choice.setChecked(self.start_in_tray)
+        self.startup_choice.setEnabled(can_hide)
         self.close_choice.model().item(self.close_choice.findData('tray')).setEnabled(can_hide)
         self.tray.setVisible(can_hide)
         del blockers
@@ -323,27 +334,39 @@ class Panel(QtWidgets.QWidget):
             # If the tray is disabled remotely while hidden, restore the window.
             self.show_panel()
 
-    def save_close_preferences(self, **updates):
+    def save_window_preferences(self, **updates):
         try:
             values = update_settings(**updates)
         except OSError:
             self.action_error = 'close_save_failed'
             self.error_until = time.monotonic() + 5
-            self.apply_close_preferences(self.close_action, self.tray_enabled)
+            self.apply_window_preferences(self.close_action, self.tray_enabled)
         else:
-            self.apply_close_preferences(values['close_action'], values['tray_enabled'])
+            self.apply_window_preferences(values['close_action'], values['tray_enabled'], values['start_in_tray'])
             if self.action_error == 'close_save_failed':
                 self.action_error = None
         self.render_feedback()
 
     def change_close_behavior(self, index):
-        self.save_close_preferences(close_action=self.close_choice.itemData(index))
+        self.save_window_preferences(close_action=self.close_choice.itemData(index))
 
     def change_tray(self, enabled):
         updates = {'tray_enabled': enabled}
-        if not enabled and self.close_action == 'tray':
-            updates['close_action'] = 'stop'
-        self.save_close_preferences(**updates)
+        if not enabled:
+            updates['start_in_tray'] = False
+            if self.close_action == 'tray':
+                updates['close_action'] = 'stop'
+        self.save_window_preferences(**updates)
+
+    def change_startup(self, enabled):
+        updates = {'start_in_tray': enabled}
+        if enabled:
+            updates['tray_enabled'] = True
+        self.save_window_preferences(**updates)
+
+    def present_on_startup(self):
+        if not (self.start_in_tray and self.tray_enabled and self.tray_available):
+            self.show()
 
     def show_panel(self):
         self.showNormal()
@@ -482,6 +505,7 @@ class Panel(QtWidgets.QWidget):
             self.action_error = 'camera_failed'
             self.error_until = time.monotonic() + 3600
             self.render_feedback()
+            self.show_panel()
         self.poll()
 
     def process_error(self, error):
@@ -502,8 +526,9 @@ class Panel(QtWidgets.QWidget):
         available = QtWidgets.QSystemTrayIcon.isSystemTrayAvailable()
         tray_changed = available != self.tray_available
         self.tray_available = available
-        if tray_changed or (preferences['close_action'], preferences['tray_enabled']) != (self.close_action, self.tray_enabled):
-            self.apply_close_preferences(preferences['close_action'], preferences['tray_enabled'])
+        if tray_changed or (preferences['close_action'], preferences['tray_enabled'], preferences['start_in_tray']) != (
+                self.close_action, self.tray_enabled, self.start_in_tray):
+            self.apply_window_preferences(preferences['close_action'], preferences['tray_enabled'], preferences['start_in_tray'])
         language = preferences['language']
         if language != self.language:
             self.language = language
@@ -711,7 +736,7 @@ def main():
         panel.show_panel()
 
     server.newConnection.connect(show)
-    panel.show()
+    panel.present_on_startup()
     app.exec_()
 
 

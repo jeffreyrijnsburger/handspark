@@ -98,6 +98,28 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.call('on-close', 'invalid').returncode, 2)
         self.assertEqual(self.call('tray', 'invalid').returncode, 2)
 
+    def test_startup_settings_default_to_tray_and_can_be_changed_offline(self):
+        default = json.loads(self.call('on-start', '--json').stdout)
+        self.assertTrue(default['start_in_tray'])
+        self.assertTrue(default['tray_enabled'])
+        self.assertFalse((Path(self.folder.name) / '.config').exists())
+        self.call('language', 'nl')
+        self.call('on-close', 'background')
+        self.call('output', '--resolution', '540')
+        visible = json.loads(self.call('on-start', 'window', '--json').stdout)
+        self.assertFalse(visible['start_in_tray'])
+        self.assertTrue(visible['tray_enabled'])
+        self.call('tray', 'off')
+        enabled = json.loads(self.call('on-start', 'tray', '--json').stdout)
+        self.assertTrue(enabled['start_in_tray'])
+        self.assertTrue(enabled['tray_enabled'])
+        self.assertEqual(json.loads(self.call('on-close', '--json').stdout)['close_action'], 'background')
+        self.assertEqual(json.loads(self.call('output', '--json').stdout)['output_resolution'], 540)
+        self.assertEqual(json.loads(self.call('language', '--json').stdout)['language'], 'nl')
+        self.call('tray', 'off')
+        self.assertFalse(json.loads(self.call('on-start', '--json').stdout)['start_in_tray'])
+        self.assertEqual(self.call('on-start', 'invalid').returncode, 2)
+
     def test_start_and_restart_replace_the_launcher_instead_of_leaving_helpers(self):
         app = Path(self.folder.name) / 'app'
         (app / 'bin').mkdir(parents=True)

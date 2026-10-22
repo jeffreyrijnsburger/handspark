@@ -8,7 +8,7 @@ import tempfile
 SETTINGS_PATH = Path.home() / '.config/teams-effects/settings.json'
 DEFAULTS = {'automatic': True, 'depth': True, 'language': 'en',
             'preview_resolution': 360, 'preview_fps': 30, 'output_resolution': 360,
-            'close_action': 'stop', 'tray_enabled': True}
+            'close_action': 'stop', 'tray_enabled': True, 'start_in_tray': True}
 LANGUAGES = {'en': 'English', 'nl': 'Nederlands'}
 CLOSE_ACTIONS = ('stop', 'background', 'tray')
 PREVIEW_RESOLUTIONS = (360, 540, 720)
@@ -26,7 +26,7 @@ def load_settings():
     if not isinstance(saved, dict):
         saved = {}
     values = {**DEFAULTS, **saved}
-    for key in ('automatic', 'depth', 'tray_enabled'):
+    for key in ('automatic', 'depth', 'tray_enabled', 'start_in_tray'):
         if type(values[key]) is not bool:
             values[key] = DEFAULTS[key]
     if not isinstance(values['language'], str) or values['language'] not in LANGUAGES:
